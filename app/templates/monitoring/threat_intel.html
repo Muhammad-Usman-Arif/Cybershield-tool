@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Threat Intelligence{% endblock %}
+{% block page_title %}<i class="fas fa-satellite-dish me-2 text-accent"></i>Threat Intelligence &amp; Feeds{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Status Banner -->
+  <div class="col-12">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-globe-americas me-2"></i>Global Threat Intelligence Telemetry</span>
+        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Feed Synchronized</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-secondary mb-0">
+          CyberShield AI consolidates threat signatures across known Command &amp; Control (C2) domains, malicious Tor egress nodes, phishing infrastructure drops, and brute-force scanner pools. These feeds are actively cross-referenced by the detection engines during real-time analysis.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Known Malicious Domains -->
+  <div class="col-lg-6">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-biohazard me-2 text-danger"></i>Known Malicious C2 &amp; Phishing Domains</span>
+        <span class="badge bg-secondary">{{ known_domains|length }} Active Signatures</span>
+      </div>
+      <div class="cyber-card-body p-0">
+        <div style="max-height: 420px; overflow-y: auto;">
+          <table class="table table-dark-cyber">
+            <thead>
+              <tr>
+                <th>Domain Signature</th>
+                <th>Classification</th>
+                <th>Threat Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in known_domains %}
+              <tr>
+                <td style="font-family:'Share Tech Mono',monospace;color:var(--accent)">{{ d }}</td>
+                <td><span class="badge bg-dark border border-secondary text-secondary">Malware C2 / Phish</span></td>
+                <td><span class="badge badge-critical">Active Blocklist</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suspicious IP Pools -->
+  <div class="col-lg-6">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-network-wired me-2 text-accent"></i>Reputation Feed — High-Risk IPs</span>
+        <span class="badge bg-secondary">Real-Time Indicators</span>
+      </div>
+      <div class="cyber-card-body p-0">
+        <div style="max-height: 420px; overflow-y: auto;">
+          <table class="table table-dark-cyber">
+            <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>Threat Category</th>
+                <th>Geo</th>
+                <th>Risk Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in threat_ips %}
+              <tr>
+                <td style="font-family:'Share Tech Mono',monospace;color:var(--text-primary)">{{ item.ip }}</td>
+                <td class="text-secondary small">{{ item.threat_type }}</td>
+                <td><span class="badge bg-dark text-muted">{{ item.country }}</span></td>
+                <td>
+                  <span class="badge {% if item.risk == 'Critical' %}badge-critical{% elif item.risk == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                    {{ item.risk }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

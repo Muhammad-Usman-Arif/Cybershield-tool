@@ -1,0 +1,35 @@
+# CyberShield AI - Core Dependencies
+# Python 3.11+
+Flask>=2.3.0,<2.4.0
+Flask-SQLAlchemy>=3.0.5
+Flask-Login>=0.6.2
+Flask-WTF>=1.1.1
+Flask-Migrate>=4.0.4
+bcrypt>=4.0.1
+flask-bcrypt>=1.0.1
+python-dotenv>=1.0.0
+email-validator>=2.0.0
+
+# Machine Learning & Data Processing
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+joblib>=1.3.0
+tldextract>=5.0.0
+
+# Document & Reporting Generation
+reportlab>=4.0.0
+openpyxl>=3.1.2
+
+# Network Packet & Telemetry Analysis
+dpkt>=1.9.8
+scapy>=2.5.0
+
+# Malware & Threat Intelligence
+# yara-python>=4.3.0  # Requires Microsoft C++ Build Tools - install separately if needed
+python-magic-bin>=0.4.14; sys_platform == 'win32'
+requests>=2.31.0
+
+# Testing & Production Server
+pytest>=7.4.0
+gunicorn>=21.2.0

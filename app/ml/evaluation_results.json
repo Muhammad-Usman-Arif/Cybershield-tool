@@ -1,0 +1,155 @@
+{
+  "timestamp": "2026-11-19T17:21:54.987417+00:00",
+  "platform": "CyberShield AI Detection Engines",
+  "phishing_model": {
+    "model_type": "RandomForestClassifier",
+    "dataset_evaluated": "C:\\Users\\DELL\\Desktop\\cybertool\\CyberShieldAI\\app\\ml\\datasets\\phishing_dataset.csv",
+    "metrics": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "confusion_matrix": [
+        [
+          1000,
+          0
+        ],
+        [
+          0,
+          1000
+        ]
+      ]
+    },
+    "classification_report": {
+      "Legitimate": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1000.0
+      },
+      "Phishing": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1000.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 2000.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 2000.0
+      }
+    },
+    "sample_validations": [
+      {
+        "url": "https://www.google.com/search?q=cybersecurity",
+        "description": "Legitimate Google Search",
+        "predicted_class": "Legitimate",
+        "probability_phishing": 0.0,
+        "correct": true
+      },
+      {
+        "url": "https://github.com/torvalds/linux/releases",
+        "description": "Legitimate GitHub Repo",
+        "predicted_class": "Legitimate",
+        "probability_phishing": 0.0,
+        "correct": true
+      },
+      {
+        "url": "http://192.168.1.100/paypal/login.php?update=account",
+        "description": "Phishing IP + Keyword",
+        "predicted_class": "Legitimate",
+        "probability_phishing": 0.41,
+        "correct": false
+      },
+      {
+        "url": "http://secure-login.bank-update.verification.xyz/auth",
+        "description": "Phishing Deceptive TLD + Subdomains",
+        "predicted_class": "Phishing",
+        "probability_phishing": 0.68,
+        "correct": true
+      },
+      {
+        "url": "http://bit.ly/fake-amazon-security-update-2026",
+        "description": "Phishing Shortener",
+        "predicted_class": "Phishing",
+        "probability_phishing": 0.63,
+        "correct": true
+      }
+    ]
+  },
+  "ddos_model": {
+    "model_type": "RandomForestClassifier",
+    "dataset_evaluated": "C:\\Users\\DELL\\Desktop\\cybertool\\CyberShieldAI\\app\\ml\\datasets\\ddos_dataset.csv",
+    "metrics": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "confusion_matrix": [
+        [
+          1000,
+          0
+        ],
+        [
+          0,
+          1000
+        ]
+      ]
+    },
+    "classification_report": {
+      "Normal": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1000.0
+      },
+      "DDoS Attack": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 1000.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 2000.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 2000.0
+      }
+    },
+    "sample_validations": [
+      {
+        "scenario": "Normal Web Browsing Session",
+        "predicted_class": "Normal Traffic",
+        "probability_attack": 0.0,
+        "correct": true
+      },
+      {
+        "scenario": "Aggressive TCP SYN Flood Attack",
+        "predicted_class": "DDoS Attack",
+        "probability_attack": 1.0,
+        "correct": true
+      },
+      {
+        "scenario": "Distributed Botnet Volumetric Attack",
+        "predicted_class": "DDoS Attack",
+        "probability_attack": 1.0,
+        "correct": true
+      }
+    ]
+  }
+}

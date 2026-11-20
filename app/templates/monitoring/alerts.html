@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Security Alerts{% endblock %}
+{% block page_title %}<i class="fas fa-exclamation-triangle me-2 text-warning"></i>Security Alerts Management{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-bell me-2 text-warning"></i>Triggered Security Alerts</span>
+        <span class="badge bg-secondary">{{ alerts|length }} Total Alerts</span>
+      </div>
+      <div class="cyber-card-body p-0">
+        {% if alerts %}
+        <div class="table-responsive">
+          <table class="table table-dark-cyber">
+            <thead>
+              <tr>
+                <th>Alert ID</th>
+                <th>Severity</th>
+                <th>Alert Message</th>
+                <th>Timestamp</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in alerts %}
+              <tr id="alert-row-{{ a.id }}">
+                <td style="font-family:'Share Tech Mono',monospace;color:var(--text-muted)">ALT-{{ "%05d"|format(a.id) }}</td>
+                <td>
+                  <span class="badge {% if a.severity == 'critical' %}badge-critical{% elif a.severity == 'high' %}badge-high{% elif a.severity == 'medium' %}badge-medium{% else %}badge-low{% endif %}">
+                    {{ a.severity|upper }}
+                  </span>
+                </td>
+                <td class="text-light" style="max-width:400px;font-size:0.85rem">{{ a.message }}</td>
+                <td class="text-muted small" style="white-space:nowrap">{{ a.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                <td>
+                  <span id="badge-status-{{ a.id }}" class="badge {% if a.status == 'new' %}bg-danger{% elif a.status == 'acknowledged' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                    {{ a.status|upper }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    {% if a.status != 'acknowledged' and a.status != 'resolved' %}
+                    <button class="btn btn-dark-subtle" onclick="updateAlertStatus({{ a.id }}, 'acknowledged')">
+                      <i class="fas fa-eye me-1"></i>Ack
+                    </button>
+                    {% endif %}
+                    {% if a.status != 'resolved' %}
+                    <button class="btn btn-dark-subtle text-success" onclick="updateAlertStatus({{ a.id }}, 'resolved')">
+                      <i class="fas fa-check me-1"></i>Resolve
+                    </button>
+                    {% else %}
+                    <span class="text-muted small"><i class="fas fa-check-double me-1 text-success"></i>Closed</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No Security Alerts</h5>
+          <p class="text-secondary small">Your system currently has no unhandled threat alerts.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function updateAlertStatus(alertId, newStatus) {
+  try {
+    const res = await cyberShieldFetch(`/monitoring/api/alerts/${alertId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.success) {
+      const badge = document.getElementById(`badge-status-${alertId}`);
+      if (badge) {
+        badge.textContent = newStatus.toUpperCase();
+        badge.className = `badge ${newStatus === 'resolved' ? 'bg-success' : 'bg-warning text-dark'}`;
+      }
+      showAlert(`Alert #${alertId} updated to ${newStatus}`, 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showAlert(res.error || 'Failed to update alert', 'danger');
+    }
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  }
+}
+</script>
+{% endblock %}

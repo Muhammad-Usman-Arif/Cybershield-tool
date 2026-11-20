@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}<i class="fas fa-cog me-2 text-accent"></i>Settings{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <!-- Profile -->
+  <div class="col-lg-6">
+    <div class="cyber-card">
+      <div class="cyber-card-header"><i class="fas fa-user-circle"></i> Profile Settings</div>
+      <div class="cyber-card-body">
+        <form method="POST" action="{{ url_for('settings_bp.update_profile') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="text-center mb-4">
+            <div style="width:80px;height:80px;border-radius:50%;background:rgba(0,212,255,0.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:2rem;color:var(--accent)">
+              {{ current_user.username[0].upper() }}
+            </div>
+            <div class="mt-2 text-accent" style="font-family:'Rajdhani',sans-serif;font-size:1.1rem">{{ current_user.username }}</div>
+            <span class="badge {% if current_user.role == 'admin' %}bg-danger{% else %}bg-info{% endif %}">{{ current_user.role }}</span>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input class="form-control" name="username" value="{{ current_user.username }}" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Email Address</label>
+            <input class="form-control" name="email" type="email" value="{{ current_user.email }}" required>
+          </div>
+          <button type="submit" class="btn btn-cyber w-100">
+            <i class="fas fa-save me-2"></i>Save Profile
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Password -->
+  <div class="col-lg-6">
+    <div class="cyber-card">
+      <div class="cyber-card-header"><i class="fas fa-lock"></i> Change Password</div>
+      <div class="cyber-card-body">
+        <form method="POST" action="{{ url_for('settings_bp.change_password') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input class="form-control" name="old_password" type="password" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <input class="form-control" name="new_password" type="password" minlength="8" required>
+            <div class="form-text text-muted">Minimum 8 characters</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Confirm New Password</label>
+            <input class="form-control" name="confirm_password" type="password" required>
+          </div>
+          <button type="submit" class="btn btn-cyber w-100">
+            <i class="fas fa-key me-2"></i>Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+    <!-- System Info -->
+    <div class="cyber-card mt-4">
+      <div class="cyber-card-header"><i class="fas fa-info-circle"></i> System Information</div>
+      <div class="cyber-card-body">
+        <table class="table table-dark-cyber mb-0 feature-table">
+          <tbody>
+            <tr><td>Application</td><td>CyberShield AI v1.0</td></tr>
+            <tr><td>Framework</td><td>Flask 2.3.x</td></tr>
+            <tr><td>Database</td><td>SQLite (Development)</td></tr>
+            <tr><td>Account Created</td><td>{{ current_user.created_at.strftime('%Y-%m-%d') }}</td></tr>
+            <tr><td>Last Login</td><td>{{ current_user.last_login.strftime('%Y-%m-%d %H:%M') if current_user.last_login else 'First login' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

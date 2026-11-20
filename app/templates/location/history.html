@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Location History{% endblock %}
+{% block page_title %}<i class="fas fa-map-marker-alt me-2" style="color:var(--accent)"></i>Location History{% endblock %}
+{% block content %}
+<div class="cyber-card">
+  <div class="cyber-card-header">
+    <i class="fas fa-history"></i> My Location Events
+    <span class="ms-auto text-muted" style="font-size:0.78rem">{{ events|length }} records</span>
+  </div>
+  <div class="cyber-card-body p-0">
+    <div class="table-responsive">
+    <table class="table table-dark-cyber mb-0">
+      <thead><tr><th>Time</th><th>Event</th><th>City</th><th>Region</th><th>Country</th><th>Timezone</th><th>Coordinates</th></tr></thead>
+      <tbody>
+        {% if events %}
+          {% for ev in events %}
+          <tr>
+            <td class="text-muted" style="font-size:0.78rem;white-space:nowrap">{{ ev.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td><span class="badge {% if ev.event_type == 'login' %}bg-success{% elif ev.event_type == 'logout' %}bg-secondary{% elif ev.event_type in ['phishing','malware','ddos','brute_force','ip_spoofing','dns_spoofing'] %}bg-danger{% else %}bg-info{% endif %}">{{ ev.event_type|upper }}</span></td>
+            <td>{{ ev.city or '—' }}</td>
+            <td>{{ ev.region or '—' }}</td>
+            <td>{{ ev.country or '—' }}</td>
+            <td style="font-size:0.78rem">{{ ev.timezone or '—' }}</td>
+            <td style="font-size:0.75rem;font-family:monospace">{% if ev.latitude %}{{ '%.4f'|format(ev.latitude) }}, {{ '%.4f'|format(ev.longitude) }}{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-map-marker-alt me-2"></i>No location events yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}<i class="fas fa-shield-halved me-2" style="color:var(--accent)"></i>Security Operations Center{% endblock %}
+
+{% block content %}
+<div class="scan-effect"></div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#00d4ff">
+      <div class="stat-icon"><i class="fas fa-search"></i></div>
+      <div class="stat-label">Total Scans</div>
+      <div class="stat-value" id="s-total">{{ stats.total_scans }}</div>
+      <div class="stat-sub">All time</div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#ff3366">
+      <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-label">Threats</div>
+      <div class="stat-value" id="s-threats">{{ stats.threats_detected }}</div>
+      <div class="stat-sub">Detected</div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#ff8800">
+      <div class="stat-icon"><i class="fas fa-fish"></i></div>
+      <div class="stat-label">Phishing</div>
+      <div class="stat-value" id="s-phish">{{ stats.phishing_count }}</div>
+      <div class="stat-sub">URLs scanned</div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#00ff88">
+      <div class="stat-icon"><i class="fas fa-network-wired"></i></div>
+      <div class="stat-label">Network</div>
+      <div class="stat-value" id="s-net">{{ stats.network_anomalies }}</div>
+      <div class="stat-sub">Anomalies</div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#a855f7">
+      <div class="stat-icon"><i class="fas fa-bug"></i></div>
+      <div class="stat-label">Malware</div>
+      <div class="stat-value" id="s-malware">{{ stats.malware_count }}</div>
+      <div class="stat-sub">Files scanned</div>
+    </div>
+  </div>
+  <div class="col-6 col-sm-4 col-xl-2">
+    <div class="stat-card" style="--card-accent:#ef4444">
+      <div class="stat-icon"><i class="fas fa-fire"></i></div>
+      <div class="stat-label">Critical</div>
+      <div class="stat-value" id="s-critical">{{ stats.critical_count }}</div>
+      <div class="stat-sub">Incidents</div>
+    </div>
+  </div>
+</div>
+
+<!-- Location + System Status Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header">
+        <i class="fas fa-map-marker-alt"></i> Current Location
+        <span id="locPermStatus" class="ms-auto" style="font-size:0.72rem;color:var(--text-muted)">Detecting...</span>
+      </div>
+      <div class="cyber-card-body">
+        <div id="locWidget" class="location-widget">
+          <i class="fas fa-satellite-dish"></i>
+          <span>Requesting location access...</span>
+        </div>
+        <div class="mt-2" style="font-size:0.75rem;color:var(--text-muted)">
+          <i class="fas fa-clock me-1"></i>
+          Session started: <span id="sessionStart">{{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') if current_user.last_login else 'Unknown' }}</span>
+        </div>
+        <div class="mt-1" style="font-size:0.75rem;color:var(--text-muted)">
+          <i class="fas fa-stopwatch me-1"></i>
+          Duration: <span id="sessionDuration" style="color:var(--accent)">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header"><i class="fas fa-terminal"></i> System Status</div>
+      <div class="cyber-card-body">
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="font-size:0.82rem"><i class="fas fa-circle me-2" style="color:#00ff88;font-size:0.5rem"></i>Detection Engines</span>
+            <span class="badge" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.2)">6 / 6 Online</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="font-size:0.82rem"><i class="fas fa-circle me-2" style="color:#00ff88;font-size:0.5rem"></i>ML Pipeline</span>
+            <span class="badge" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.2)">Active</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <span style="font-size:0.82rem"><i class="fas fa-circle me-2" style="color:#00ff88;font-size:0.5rem"></i>Database</span>
+            <span class="badge" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.2)">Connected</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center py-2">
+            <span style="font-size:0.82rem"><i class="fas fa-user-shield me-2" style="color:var(--accent)"></i>Operator</span>
+            <span style="font-size:0.82rem;color:var(--accent);font-weight:600">{{ current_user.username }} <span class="badge bg-secondary ms-1" style="font-size:0.6rem">{{ current_user.role }}</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header">
+        <i class="fas fa-chart-line"></i> Detection Activity &mdash; Last 7 Days
+        <span class="ms-auto badge" style="background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);font-size:0.65rem">Live</span>
+      </div>
+      <div class="cyber-card-body"><div class="chart-container"><canvas id="activityChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header"><i class="fas fa-chart-pie"></i> Threat Distribution</div>
+      <div class="cyber-card-body"><div class="chart-container"><canvas id="moduleChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Risk + Timeline Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header"><i class="fas fa-chart-bar"></i> Risk Level Distribution</div>
+      <div class="cyber-card-body"><div class="chart-container" style="height:200px"><canvas id="riskChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header">
+        <i class="fas fa-bolt"></i> Recent Activity
+        <a href="{{ url_for('history_bp.index') }}" class="btn btn-cyber-outline btn-sm ms-auto">View All</a>
+      </div>
+      <div id="activityTimeline" style="max-height:220px;overflow-y:auto">
+        <div class="text-muted text-center py-3" style="font-size:0.82rem"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Module Stats + Alerts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header"><i class="fas fa-th-large"></i> Module Statistics</div>
+      <div class="cyber-card-body p-0">
+        <table class="table table-dark-cyber mb-0">
+          <thead><tr><th>Module</th><th>Scans</th><th>Action</th></tr></thead>
+          <tbody id="moduleStatsBody"><tr><td colspan="3" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="cyber-card h-100">
+      <div class="cyber-card-header">
+        <i class="fas fa-bell"></i> Recent Alerts
+        <a href="{{ url_for('history_bp.index') }}" class="btn btn-cyber-outline btn-sm ms-auto">All</a>
+      </div>
+      <div class="cyber-card-body p-0">
+        <table class="table table-dark-cyber mb-0">
+          <thead><tr><th>Time</th><th>Severity</th><th>Message</th></tr></thead>
+          <tbody>
+            {% if recent_alerts %}
+              {% for alert in recent_alerts %}
+              <tr>
+                <td class="text-muted" style="font-size:0.72rem;white-space:nowrap">{{ alert.created_at.strftime('%m-%d %H:%M') }}</td>
+                <td><span class="badge-{{ alert.severity }}">{{ alert.severity|upper }}</span></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.78rem">{{ alert.message }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="3" class="text-center text-muted py-4" style="font-size:0.82rem"><i class="fas fa-shield-halved me-2 text-accent"></i>No alerts detected</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Launch -->
+<div class="cyber-card mb-2">
+  <div class="cyber-card-header"><i class="fas fa-rocket"></i> Quick Launch &mdash; Detection Modules</div>
+  <div class="cyber-card-body">
+    <div class="row g-3">
+      {% set modules = [
+        ('phishing_bp.index',    'fas fa-fish',         '#ff8800', 'Phishing',    'URL Analysis'),
+        ('ip_spoofing_bp.index', 'fas fa-network-wired','#00d4ff', 'IP Spoofing', 'PCAP Analysis'),
+        ('ddos_bp.index',        'fas fa-bolt',         '#ef4444', 'DDoS',        'Traffic Analysis'),
+        ('malware_bp.index',     'fas fa-bug',          '#a855f7', 'Malware',     'File Scanning'),
+        ('brute_force_bp.index', 'fas fa-key',          '#ffcc00', 'Brute Force', 'Auth Logs'),
+        ('dns_spoofing_bp.index','fas fa-server',       '#00ff88', 'DNS Spoofing','DNS Analysis'),
+      ] %}
+      {% for endpoint, icon, color, name, desc in modules %}
+      <div class="col-6 col-sm-4 col-lg-2">
+        <a href="{{ url_for(endpoint) }}" class="text-decoration-none d-block">
+          <div class="stat-card text-center" style="--card-accent:{{ color }};padding:16px 10px;cursor:pointer">
+            <i class="{{ icon }} fa-lg mb-2" style="color:{{ color }};filter:drop-shadow(0 0 6px {{ color }})"></i>
+            <div class="stat-label" style="font-size:0.7rem">{{ name }}</div>
+            <div class="stat-sub" style="font-size:0.65rem">{{ desc }}</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/location.js') }}"></script>
+{% endblock %}

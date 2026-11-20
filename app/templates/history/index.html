@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% block title %}Detection History{% endblock %}
+{% block page_title %}<i class="fas fa-history me-2 text-accent"></i>Detection History{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+  <div>
+    <h2 style="font-family:'Rajdhani',sans-serif;margin:0">
+      <i class="fas fa-shield-halved me-2 text-accent"></i>Detection & Threat Telemetry Audit
+    </h2>
+    <span class="text-muted" style="font-size:0.8rem">Enterprise forensic security logs and detection analytics</span>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-cyber" data-bs-toggle="modal" data-bs-target="#excelExportModal">
+      <i class="fas fa-file-excel me-2 text-success"></i>Export Excel (.xlsx)
+    </button>
+    <a href="{{ url_for('reports_bp.export_all') }}" class="btn btn-cyber-outline">
+      <i class="fas fa-file-csv me-2"></i>Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="cyber-card mb-4">
+  <div class="cyber-card-header">
+    <i class="fas fa-filter me-2 text-accent"></i>Filter Detection Telemetry
+  </div>
+  <div class="cyber-card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-6 col-md-3 col-xl-2">
+        <label class="form-label" style="font-size:0.75rem">Security Module</label>
+        <select class="form-select form-select-sm" id="filterModule">
+          <option value="">All Security Modules</option>
+          <option value="phishing">Phishing URL</option>
+          <option value="ip_spoofing">IP Spoofing</option>
+          <option value="dns_spoofing">DNS Spoofing</option>
+          <option value="ddos">DDoS Attack</option>
+          <option value="brute_force">Brute Force</option>
+          <option value="malware">Malware Analysis</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-md-3 col-xl-2">
+        <label class="form-label" style="font-size:0.75rem">Risk Level</label>
+        <select class="form-select form-select-sm" id="filterRisk">
+          <option value="">All Severity Levels</option>
+          <option value="Critical">Critical</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-md-3 col-xl-2">
+        <label class="form-label" style="font-size:0.75rem">Target / Result Keyword</label>
+        <input class="form-control form-control-sm" id="filterResult" placeholder="e.g. Trojan, SYN, 192.168...">
+      </div>
+      <div class="col-sm-6 col-md-3 col-xl-2">
+        <label class="form-label" style="font-size:0.75rem">From Date</label>
+        <input type="date" class="form-control form-control-sm" id="filterStartDate">
+      </div>
+      <div class="col-sm-6 col-md-3 col-xl-2">
+        <label class="form-label" style="font-size:0.75rem">To Date</label>
+        <input type="date" class="form-control form-control-sm" id="filterEndDate">
+      </div>
+      {% if current_user.role == 'admin' %}
+      <div class="col-sm-6 col-md-3 col-xl-1">
+        <label class="form-label" style="font-size:0.75rem">User</label>
+        <select class="form-select form-select-sm" id="filterUser">
+          <option value="">All Users</option>
+          {% for u in users %}
+          <option value="{{ u.id }}">{{ u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-sm-6 col-md-3 col-xl-1">
+        <button class="btn btn-cyber btn-sm w-100" onclick="loadHistory(1)">
+          <i class="fas fa-search me-1"></i>Apply
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="cyber-card">
+  <div class="cyber-card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-table-list me-2 text-accent"></i>Audit Records</span>
+    <span class="badge" style="background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2)" id="histCount">0 records</span>
+  </div>
+  <div class="cyber-card-body p-0">
+    <div id="historyLoading" class="text-center py-5">
+      <div class="cyber-spinner mx-auto mb-2"></div>
+      <p class="text-muted" style="font-size:0.85rem">Loading forensic history...</p>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-dark-cyber mb-0 d-none" id="historyTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Tool Name</th>
+            <th>Target / Input</th>
+            <th>Detection Result</th>
+            <th>Risk Level</th>
+            <th>Score</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Pagination -->
+  <div class="cyber-card-body d-flex justify-content-between align-items-center border-top" style="border-color:var(--border)!important">
+    <small class="text-muted" id="histPageInfo"></small>
+    <div id="pagination" class="d-flex gap-1"></div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: ENTERPRISE EXCEL EXPORT (.xlsx) -->
+<!-- ========================================================= -->
+<div class="modal fade" id="excelExportModal" tabindex="-1" aria-labelledby="excelExportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--accent);box-shadow:0 0 25px rgba(0,212,255,0.25)">
+      <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08)">
+        <h5 class="modal-title" id="excelExportModalLabel" style="font-family:'Rajdhani',sans-serif;color:var(--accent)">
+          <i class="fas fa-file-excel me-2 text-success"></i>Export Enterprise Excel Audit Report
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="font-size:0.85rem">
+        <p class="text-muted mb-3" style="font-size:0.8rem">
+          Generates a multi-sheet, enterprise-grade <code>.xlsx</code> cybersecurity workbook with Executive Summary, Charts, 20 Detection Details columns, Tool-wise Analysis, and Geolocation Audit.
+        </p>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">Detection Tool</label>
+            <select class="form-select form-select-sm" id="exportModule">
+              <option value="">All Tools (Full Telemetry)</option>
+              <option value="phishing">Phishing URL Detection</option>
+              <option value="ip_spoofing">IP Spoofing Analysis</option>
+              <option value="dns_spoofing">DNS Spoofing Detection</option>
+              <option value="ddos">DDoS Attack Detection</option>
+              <option value="brute_force">Brute Force Detection</option>
+              <option value="malware">Malware Static Analysis</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">Risk Level Filter</label>
+            <select class="form-select form-select-sm" id="exportRisk">
+              <option value="">All Severity Levels</option>
+              <option value="Critical">Critical (Score 80-100)</option>
+              <option value="High">High (Score 60-79)</option>
+              <option value="Medium">Medium (Score 30-59)</option>
+              <option value="Low">Low / Clean (Score 0-29)</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">Detection Status</label>
+            <select class="form-select form-select-sm" id="exportStatus">
+              <option value="">All Detections</option>
+              <option value="threat">Threats Detected Only</option>
+              <option value="clean">Normal / Clean Scans Only</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">Report Timezone</label>
+            <input type="text" class="form-control form-control-sm" id="exportTimezone" placeholder="e.g. UTC, Asia/Karachi">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">Start Date (From)</label>
+            <input type="date" class="form-control form-control-sm" id="exportStartDate">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label" style="font-size:0.75rem">End Date (To)</label>
+            <input type="date" class="form-control form-control-sm" id="exportEndDate">
+          </div>
+          {% if current_user.role == 'admin' %}
+          <div class="col-12">
+            <label class="form-label" style="font-size:0.75rem">Filter by Operator Account (Admin Only)</label>
+            <select class="form-select form-select-sm" id="exportUser">
+              <option value="">All Users (System-wide Audit)</option>
+              {% for u in users %}
+              <option value="{{ u.id }}">{{ u.username }} ({{ u.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,0.08)">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-cyber" onclick="downloadExcelExport()">
+          <i class="fas fa-download me-1"></i>Download Excel (.xlsx)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+const RISK_COLORS = {'Very Low':'#00ff88','Low':'#00d4ff','Medium':'#ffcc00','High':'#ff8800','Critical':'#ff3366'};
+
+// Auto-detect browser timezone
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+      const tzInput = document.getElementById('exportTimezone');
+      if (tzInput) tzInput.value = tz;
+    }
+  } catch(e) {}
+  loadHistory(1);
+});
+
+async function loadHistory(page=1) {
+  currentPage = page;
+  document.getElementById('historyLoading').classList.remove('d-none');
+  document.getElementById('historyTable').classList.add('d-none');
+
+  const module    = document.getElementById('filterModule').value;
+  const risk      = document.getElementById('filterRisk').value;
+  const result    = document.getElementById('filterResult').value;
+  const startDate = document.getElementById('filterStartDate').value;
+  const endDate   = document.getElementById('filterEndDate').value;
+  const userEl    = document.getElementById('filterUser');
+  const userId    = userEl ? userEl.value : '';
+
+  const params = new URLSearchParams({
+    page,
+    per_page: 20,
+    module,
+    risk_level: risk,
+    result,
+    start_date: startDate,
+    end_date: endDate,
+    user_id: userId
+  });
+
+  const res = await fetch('/history/api/data?' + params);
+  const data = await res.json();
+  renderHistory(data);
+}
+
+function renderHistory(data) {
+  document.getElementById('historyLoading').classList.add('d-none');
+  document.getElementById('historyTable').classList.remove('d-none');
+  document.getElementById('histCount').textContent = `${data.total} records`;
+  document.getElementById('histPageInfo').textContent = `Showing page ${data.current_page} of ${data.pages || 1} (${data.total} total detections)`;
+
+  const body = document.getElementById('historyBody');
+  if (!data.items.length) {
+    body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5"><i class="fas fa-shield-halved fa-2x mb-2 d-block"></i>No detection records found matching criteria.</td></tr>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  body.innerHTML = data.items.map(d => {
+    const c = RISK_COLORS[d.risk_level] || '#94a3b8';
+    const rl = (d.risk_level || 'low').toLowerCase().replace(' ', '-');
+    const modClean = (d.module || '').replace('_', ' ').toUpperCase();
+    return `<tr>
+      <td style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap">${new Date(d.created_at).toLocaleString()}</td>
+      <td><span class="badge bg-secondary" style="font-size:0.7rem">${modClean}</span></td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem" title="${d.input_summary}">${d.input_summary}</td>
+      <td style="color:${c};font-weight:600;font-size:0.82rem">${d.result}</td>
+      <td><span class="badge badge-${rl}">${d.risk_level}</span></td>
+      <td style="color:${c};font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700">${d.risk_score}</td>
+      <td style="white-space:nowrap">
+        <a href="/reports/${d.id}/pdf" class="btn btn-sm btn-cyber-outline me-1" target="_blank" title="PDF Report"><i class="fas fa-file-pdf"></i></a>
+        <a href="/reports/${d.id}/csv" class="btn btn-sm btn-cyber-outline me-1" target="_blank" title="CSV Record"><i class="fas fa-file-csv"></i></a>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${d.id})" title="Delete"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const pg = document.getElementById('pagination');
+  pg.innerHTML = '';
+  if (data.pages > 1) {
+    for (let i = 1; i <= data.pages; i++) {
+      if (i === 1 || i === data.pages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+        const btn = document.createElement('button');
+        btn.className = `btn btn-sm ${i === currentPage ? 'btn-cyber' : 'btn-cyber-outline'}`;
+        btn.textContent = i;
+        btn.onclick = () => loadHistory(i);
+        pg.appendChild(btn);
+      }
+    }
+  }
+}
+
+async function deleteRecord(id) {
+  if (!confirm('Are you sure you want to delete this detection record?')) return;
+  const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const res = await fetch(`/history/api/delete/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': token }
+  });
+  if ((await res.json()).success) loadHistory(currentPage);
+}
+
+function downloadExcelExport() {
+  const module    = document.getElementById('exportModule').value;
+  const risk      = document.getElementById('exportRisk').value;
+  const status    = document.getElementById('exportStatus').value;
+  const timezone  = document.getElementById('exportTimezone').value;
+  const startDate = document.getElementById('exportStartDate').value;
+  const endDate   = document.getElementById('exportEndDate').value;
+  const userEl    = document.getElementById('exportUser');
+  const userId    = userEl ? userEl.value : '';
+
+  const params = new URLSearchParams({
+    module,
+    risk_level: risk,
+    status,
+    timezone,
+    start_date: startDate,
+    end_date: endDate,
+    user_id: userId
+  });
+
+  // Close modal and download
+  const modalEl = document.getElementById('excelExportModal');
+  const modal = bootstrap.Modal.getInstance(modalEl);
+  if (modal) modal.hide();
+
+  window.location.href = '/history/export/excel?' + params.toString();
+}
+</script>
+{% endblock %}

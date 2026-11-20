@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% block title %}Brute Force Detection{% endblock %}
+{% block page_title %}<i class="fas fa-key me-2 text-accent"></i>Brute Force Detection{% endblock %}
+
+{% block content %}
+<!-- Mode Switcher -->
+<div class="mode-toggle-card">
+  <div class="d-flex align-items-center gap-2">
+    <i class="fas fa-sliders-h text-accent"></i>
+    <span class="small fw-bold">Analysis Profile:</span>
+    <span id="currentModeLabel" class="text-secondary small">Beginner Mode (Guided &amp; Explainable)</span>
+  </div>
+  <div class="mode-switcher-pill">
+    <button class="mode-pill-btn active" id="btnModeBeginner" onclick="switchMode('beginner')">
+      <i class="fas fa-user-graduate"></i>Beginner
+    </button>
+    <button class="mode-pill-btn" id="btnModeAdvanced" onclick="switchMode('advanced')">
+      <i class="fas fa-terminal"></i>Advanced
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-file-alt me-2"></i>Authentication Log Ingestion</span>
+        <span class="badge bg-secondary">Sliding-Window Engine</span>
+      </div>
+      <div class="cyber-card-body">
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#bfPasteTab"><i class="fas fa-paste me-1"></i>Paste Logs</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bfFileTab"><i class="fas fa-file-upload me-1"></i>Upload File</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="bfPasteTab">
+            <label class="form-label">Authentication Log Snippet</label>
+            <textarea class="form-control mb-3" id="logText" rows="7"
+              placeholder="Nov  5 10:21:33 server sshd[1234]: Failed password for root from 192.168.1.50 port 45212 ssh2&#10;Nov  5 10:21:35 server sshd[1235]: Failed password for admin from 192.168.1.50 port 45214 ssh2"
+              style="font-family:'Share Tech Mono',monospace;font-size:0.75rem"></textarea>
+          </div>
+
+          <div class="tab-pane fade" id="bfFileTab">
+            <div class="upload-zone" onclick="document.getElementById('bfFile').click()">
+              <i class="fas fa-file-alt"></i>
+              <p id="bfFileName">Drop .log or .txt file here</p>
+              <div class="upload-hint">Syslog, Auth.log, Apache access or Windows Security XML (Max 5MB)</div>
+              <input type="file" id="bfFile" accept=".log,.txt" onchange="previewBFFile(this)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Samples -->
+        <div class="mb-3">
+          <label class="form-label small text-muted">Quick Fill Test Samples:</label>
+          <div class="sample-chips-container">
+            <span class="sample-chip" onclick="fillBFSample('ssh_attack')">
+              <i class="fas fa-arrow-down me-1"></i>SSH Dictionary Attack
+            </span>
+            <span class="sample-chip" onclick="fillBFSample('web_401')">
+              <i class="fas fa-arrow-down me-1"></i>Web 401 Credential Spray
+            </span>
+            <span class="sample-chip" onclick="fillBFSample('clean_log')">
+              <i class="fas fa-arrow-down me-1"></i>Normal Auth Sequence
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label d-flex justify-content-between">
+            <span>Detection Threshold</span>
+            <span class="text-accent fw-bold" id="threshVal">5</span>
+          </label>
+          <input type="range" class="form-range" id="threshold" min="1" max="50" value="5"
+                 oninput="document.getElementById('threshVal').textContent=this.value">
+          <div class="form-text text-muted small">Max allowable failed auth attempts within a 5-minute sliding window.</div>
+        </div>
+
+        <button class="btn btn-cyber w-100 mt-3" id="btnAnalyzeBF" onclick="analyzeBF()">
+          <i class="fas fa-search me-2"></i>Analyze Auth Sequences
+        </button>
+
+        <div id="bfLoading" class="text-center mt-3 d-none">
+          <div class="cyber-spinner mx-auto mb-2"></div>
+          <small class="text-secondary">Parsing log timestamps &amp; calculating IP failure frequencies...</small>
+        </div>
+
+        <!-- Explainer -->
+        <div id="beginnerExplainer" class="attack-explainer-card">
+          <div class="explainer-title"><i class="fas fa-lightbulb"></i> What is a Brute Force Attack?</div>
+          <p class="text-secondary small mb-2">
+            Brute force attacks involve automated scripts submitting high-volume username and password combinations to crack credentials and gain unauthorized access to servers.
+          </p>
+          <div class="attack-step-diagram">
+            <div class="attack-node threat">Wordlist / Bot<br><small class="text-muted">1000s of guesses</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node text-danger">Auth Service<br><small class="text-muted">SSH / RDP / Web</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node victim">System Shell<br><small class="text-muted">Compromised</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Library -->
+    <div class="cyber-card mt-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-terminal me-2 text-accent"></i>SOC Analyst Command Library</span>
+        <span class="badge bg-secondary">CLI Verification</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-muted small mb-3">Commands for isolating attacking IPs in server authorization logs.</p>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-shield-virus text-accent"></i> Top Failed SSH Attacker IPs</span>
+            <span class="command-tag">awk / grep</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="bfcmd1">grep "Failed password" /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr | head -10</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('bfcmd1').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-ban text-accent"></i> Check Fail2Ban Jail Status</span>
+            <span class="command-tag">fail2ban</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="bfcmd2">fail2ban-client status sshd</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('bfcmd2').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div class="col-lg-7" id="bfResultCol">
+    <div class="cyber-card text-center py-5">
+      <i class="fas fa-key fa-3x mb-3 text-muted"></i>
+      <h5 class="text-muted">Paste authentication logs or upload a log file</h5>
+      <p class="text-secondary small">Failed attempt velocity, targeted usernames, and attacker IP lists will appear here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMode = 'beginner';
+
+const BF_SAMPLES = {
+  ssh_attack: `Nov 05 14:10:01 server sshd[1234]: Failed password for root from 192.168.1.50 port 45212 ssh2
+Nov 05 14:10:03 server sshd[1235]: Failed password for admin from 192.168.1.50 port 45214 ssh2
+Nov 05 14:10:05 server sshd[1236]: Failed password for user1 from 192.168.1.50 port 45216 ssh2
+Nov 05 14:10:08 server sshd[1237]: Failed password for oracle from 192.168.1.50 port 45218 ssh2
+Nov 05 14:10:11 server sshd[1238]: Failed password for test from 192.168.1.50 port 45220 ssh2
+Nov 05 14:10:14 server sshd[1239]: Failed password for deploy from 192.168.1.50 port 45222 ssh2`,
+
+  web_401: `198.51.100.22 - - [05/Nov/2026:12:00:01 +0000] "POST /api/v1/auth/login HTTP/1.1" 401 245
+198.51.100.22 - - [05/Nov/2026:12:00:02 +0000] "POST /api/v1/auth/login HTTP/1.1" 401 245
+198.51.100.22 - - [05/Nov/2026:12:00:03 +0000] "POST /api/v1/auth/login HTTP/1.1" 401 245
+198.51.100.22 - - [05/Nov/2026:12:00:04 +0000] "POST /api/v1/auth/login HTTP/1.1" 401 245
+198.51.100.22 - - [05/Nov/2026:12:00:05 +0000] "POST /api/v1/auth/login HTTP/1.1" 401 245`,
+
+  clean_log: `Nov 05 09:15:20 server sshd[2201]: Accepted publickey for analyst from 10.0.0.15 port 51230 ssh2
+Nov 05 10:00:12 server systemd[1]: Started Session 42 of user analyst.`
+};
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('btnModeBeginner').classList.toggle('active', mode === 'beginner');
+  document.getElementById('btnModeAdvanced').classList.toggle('active', mode === 'advanced');
+  document.getElementById('currentModeLabel').textContent = mode === 'beginner' 
+    ? 'Beginner Mode (Guided & Explainable)' 
+    : 'Advanced Mode (Raw Logs & Granular Thresholds)';
+  
+  const beginnerExplainer = document.getElementById('beginnerExplainer');
+  if (beginnerExplainer) beginnerExplainer.style.display = mode === 'beginner' ? 'block' : 'none';
+}
+
+function fillBFSample(type) {
+  document.getElementById('logText').value = BF_SAMPLES[type] || '';
+  showAlert('Log sample loaded. Click "Analyze Auth Sequences" to inspect.', 'info');
+}
+
+function previewBFFile(inp) {
+  if (inp.files[0]) {
+    document.getElementById('bfFileName').textContent = inp.files[0].name;
+    inp.closest('.upload-zone').style.borderColor = 'var(--accent)';
+  }
+}
+
+async function analyzeBF() {
+  const threshold = parseInt(document.getElementById('threshold').value) || 5;
+  const bfFile = document.getElementById('bfFile').files[0];
+  const logText = document.getElementById('logText').value.trim();
+
+  let body;
+  if (bfFile) {
+    const fd = new FormData();
+    fd.append('file', bfFile);
+    fd.append('threshold', threshold);
+    body = fd;
+  } else if (logText) {
+    body = JSON.stringify({ log_text: logText, threshold: threshold });
+  } else {
+    showAlert('Please paste log lines or select a log file.', 'warning');
+    return;
+  }
+
+  document.getElementById('bfLoading').classList.remove('d-none');
+  try {
+    const data = await cyberShieldFetch('/brute-force/api/analyze', { method: 'POST', body });
+    if (!data.success) {
+      showAlert(data.error || 'Brute force analysis failed.', 'danger');
+      return;
+    }
+    renderBFResult(data);
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  } finally {
+    document.getElementById('bfLoading').classList.add('d-none');
+  }
+}
+
+function renderBFResult(d) {
+  const col = document.getElementById('bfResultCol');
+  const colors = {
+    'Very Low': '#34c759',
+    'Low': '#00d9ff',
+    'Medium': '#ffd60a',
+    'High': '#ff9500',
+    'Critical': '#ff3366'
+  };
+  const c = colors[d.risk_level] || '#00d9ff';
+  const det = d.details || {};
+  const inds = (d.indicators || []).map(i =>
+    `<div class="indicator-item ${d.risk_score < 30 ? 'indicator-safe' : ''}">
+       <i class="fas fa-${d.risk_score < 30 ? 'check-circle' : 'key'}"></i>
+       <span>${i}</span>
+     </div>`
+  ).join('') || '<div class="text-muted small">No brute force indicators triggered.</div>';
+
+  const ips = (det.suspicious_ips || []).slice(0, 10).map(ip => `
+    <tr>
+      <td class="font-monospace text-accent small">${ip.ip}</td>
+      <td class="text-warning fw-bold">${ip.total_attempts}</td>
+      <td class="text-danger fw-bold">${ip.max_in_window}</td>
+      <td class="text-secondary small" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${(ip.targeted_users||[]).slice(0,3).join(', ') || 'root'}
+      </td>
+    </tr>`).join('');
+
+  col.innerHTML = `
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-chart-pie me-2"></i>Brute Force Verdict</span>
+        <span class="badge bg-secondary">${new Date(d.timestamp).toLocaleString()}</span>
+      </div>
+      <div class="cyber-card-body">
+        <div class="d-flex align-items-center gap-4 mb-3">
+          <div class="risk-score-circle" style="--score-color:${c};border-color:${c}">
+            <div class="score-num" style="color:${c}">${d.risk_score}</div>
+            <div class="score-label">/ 100 RISK</div>
+          </div>
+          <div>
+            <h3 class="fw-bold mb-1" style="color:${c}">${d.result}</h3>
+            <span class="badge badge-${(d.risk_level||'low').toLowerCase().replace(' ','-')} me-2">${d.risk_level} Risk</span>
+            <div class="text-secondary small mt-1"><i class="fas fa-microchip me-1 text-accent"></i>${d.model_used || 'Temporal Log Engine'}</div>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-2">
+          <div class="col-4 text-center p-2 rounded" style="background:#0e0e0e;border:1px solid #292929">
+            <div class="text-muted small">Lines Parsed</div>
+            <div class="fw-bold text-accent fs-5">${det.total_lines||0}</div>
+          </div>
+          <div class="col-4 text-center p-2 rounded" style="background:#0e0e0e;border:1px solid #292929">
+            <div class="text-muted small">Failed Attempts</div>
+            <div class="fw-bold text-danger fs-5">${det.failed_attempts||0}</div>
+          </div>
+          <div class="col-4 text-center p-2 rounded" style="background:#0e0e0e;border:1px solid #292929">
+            <div class="text-muted small">Attacking IPs</div>
+            <div class="fw-bold text-warning fs-5">${(det.suspicious_ips||[]).length}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-list me-2 text-warning"></i>Forensic Indicators</span>
+      </div>
+      <div class="cyber-card-body">${inds}</div>
+    </div>
+
+    ${ips ? `
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-table me-2 text-accent"></i>Top Flagged Attacker IPs</span>
+      </div>
+      <div class="cyber-card-body p-0">
+        <table class="table table-dark-cyber">
+          <thead><tr><th>Attacking IP</th><th>Total</th><th>Max / 5min</th><th>Targeted Accounts</th></tr></thead>
+          <tbody>${ips}</tbody>
+        </table>
+      </div>
+    </div>` : ''}
+
+    ${d.detection_id ? `
+    <div class="d-flex gap-2">
+      <a href="/reports/${d.detection_id}/pdf" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-pdf me-1"></i>Download PDF</a>
+      <a href="/reports/${d.detection_id}/csv" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-csv me-1"></i>Download CSV</a>
+    </div>` : ''}`;
+}
+</script>
+{% endblock %}

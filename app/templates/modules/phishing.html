@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% block title %}Phishing URL Detection{% endblock %}
+{% block page_title %}<i class="fas fa-fish me-2 text-accent"></i>Phishing URL Detection{% endblock %}
+
+{% block content %}
+<!-- Mode Switcher -->
+<div class="mode-toggle-card">
+  <div class="d-flex align-items-center gap-2">
+    <i class="fas fa-sliders-h text-accent"></i>
+    <span class="small fw-bold">Analysis Profile:</span>
+    <span id="currentModeLabel" class="text-secondary small">Beginner Mode (Guided &amp; Explainable)</span>
+  </div>
+  <div class="mode-switcher-pill">
+    <button class="mode-pill-btn active" id="btnModeBeginner" onclick="switchMode('beginner')">
+      <i class="fas fa-user-graduate"></i>Beginner
+    </button>
+    <button class="mode-pill-btn" id="btnModeAdvanced" onclick="switchMode('advanced')">
+      <i class="fas fa-terminal"></i>Advanced
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Input Card -->
+  <div class="col-lg-5">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-search me-2"></i>URL Investigation</span>
+        <span class="badge bg-secondary" id="engineBadge">RandomForest ML + Heuristics</span>
+      </div>
+      <div class="cyber-card-body">
+        <div class="mb-3">
+          <label class="form-label">Target URL</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-link"></i></span>
+            <input type="url" id="urlInput" class="form-control"
+                   placeholder="https://secure-login.update-paypal.com/verify" autocomplete="off">
+          </div>
+          <div class="form-text text-muted">Include scheme (<code>http://</code> or <code>https://</code>)</div>
+        </div>
+
+        <!-- Quick Samples for Testing -->
+        <div class="mb-3">
+          <label class="form-label small text-muted">Quick Fill Test Samples:</label>
+          <div class="sample-chips-container">
+            <span class="sample-chip" onclick="fillSample('http://192.168.1.100/secure-login/paypal/update.php')">
+              <i class="fas fa-arrow-down me-1"></i>IP Phishing
+            </span>
+            <span class="sample-chip" onclick="fillSample('http://apple-support-verify-icloud.account-security.xyz/login')">
+              <i class="fas fa-arrow-down me-1"></i>Brand Spoof
+            </span>
+            <span class="sample-chip" onclick="fillSample('https://www.google.com/search?q=cybersecurity')">
+              <i class="fas fa-arrow-down me-1"></i>Legitimate URL
+            </span>
+          </div>
+        </div>
+
+        <button class="btn btn-cyber w-100" id="analyzeBtn" onclick="analyzePhishing()">
+          <i class="fas fa-shield-alt me-2"></i>Inspect URL
+        </button>
+
+        <!-- Loading -->
+        <div id="loadingDiv" class="text-center mt-4 d-none">
+          <div class="cyber-spinner mx-auto mb-3"></div>
+          <p class="text-secondary small">Extracting 28 lexical features &amp; calculating ML probability...</p>
+        </div>
+
+        <!-- Beginner Mode Educational Explainer -->
+        <div id="beginnerExplainer" class="attack-explainer-card">
+          <div class="explainer-title"><i class="fas fa-lightbulb"></i> What is a Phishing URL Attack?</div>
+          <p class="text-secondary small mb-2">
+            Phishing is a social engineering attack where malicious actors build deceptive clones of legitimate websites (like PayPal, Google, or banks) to steal user credentials, session tokens, or financial data.
+          </p>
+          <div class="attack-step-diagram">
+            <div class="attack-node threat">Attacker<br><small class="text-muted">Spoofed Site</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node text-warning">Deceptive Link<br><small class="text-muted">SMS / Email</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node victim">Victim User<br><small class="text-muted">Harvested Creds</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Library -->
+    <div class="cyber-card mt-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-terminal me-2 text-accent"></i>SOC Analyst Command Library</span>
+        <span class="badge bg-secondary">CLI Verification</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-muted small mb-3">Run these terminal commands to verify domain headers, WHOIS creation age, and DNS infrastructure.</p>
+
+        <!-- Command 1 -->
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-network-wired text-accent"></i> Inspect Redirect Chain</span>
+            <span class="command-tag">curl</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="cmd1">curl -ILs -A "Mozilla/5.0" "TARGET_URL" | head -n 25</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('cmd1').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Command 2 -->
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-globe text-accent"></i> Check Domain Registration Age</span>
+            <span class="command-tag">whois</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="cmd2">whois TARGET_DOMAIN | grep -iE 'creation date|registrar'</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('cmd2').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Command 3 -->
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-server text-accent"></i> Query Authoritative Name Servers</span>
+            <span class="command-tag">dig</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="cmd3">dig +short NS TARGET_DOMAIN</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('cmd3').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div class="col-lg-7">
+    <div id="resultSection" class="d-none">
+      <!-- Result Card -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-header">
+          <span><i class="fas fa-chart-pie me-2"></i>Analysis Verdict &amp; Risk Scoring</span>
+          <span class="badge bg-secondary" id="scanTime">—</span>
+        </div>
+        <div class="cyber-card-body">
+          <div class="row align-items-center g-4">
+            <div class="col-auto">
+              <div class="risk-score-circle" id="riskCircle">
+                <div class="score-num" id="riskScore">0</div>
+                <div class="score-label">/ 100 RISK</div>
+              </div>
+            </div>
+            <div class="col">
+              <h3 class="mb-1 fw-bold" id="resultText">—</h3>
+              <div class="mb-2">
+                <span class="badge me-2" id="riskBadge">—</span>
+                <span class="badge bg-secondary" id="confidenceBadge">—</span>
+              </div>
+              <div class="text-secondary small">
+                <i class="fas fa-microchip me-1 text-accent"></i><span id="modelUsed">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicators -->
+      <div class="cyber-card mb-4">
+        <div class="cyber-card-header">
+          <span><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Forensic Indicators Triggered</span>
+        </div>
+        <div class="cyber-card-body" id="indicatorsDiv"></div>
+      </div>
+
+      <!-- Advanced Features Table (Shown in Advanced Mode or by default in result) -->
+      <div class="cyber-card mb-4" id="featureAnalysisCard">
+        <div class="cyber-card-header">
+          <span><i class="fas fa-table me-2"></i>URL Feature Vector (Lexical &amp; Structural)</span>
+          <span class="badge bg-secondary">28 Parameters</span>
+        </div>
+        <div class="cyber-card-body p-0">
+          <div style="max-height: 280px; overflow-y: auto;">
+            <table class="table table-dark-cyber" id="featureTable"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex gap-2">
+        <a href="#" class="btn btn-cyber-outline" id="pdfBtn" target="_blank">
+          <i class="fas fa-file-pdf me-1"></i>Download PDF
+        </a>
+        <a href="#" class="btn btn-cyber-outline" id="csvBtn" target="_blank">
+          <i class="fas fa-file-csv me-1"></i>Download CSV
+        </a>
+        <button class="btn btn-dark-subtle" onclick="clearResult()">
+          <i class="fas fa-redo me-1"></i>New Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="cyber-card text-center py-5">
+      <i class="fas fa-fish fa-3x mb-3 text-muted"></i>
+      <h5 class="text-muted">Enter a URL or select a sample above</h5>
+      <p class="text-secondary small">Deep heuristics and Random Forest ML features will appear here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMode = 'beginner';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('btnModeBeginner').classList.toggle('active', mode === 'beginner');
+  document.getElementById('btnModeAdvanced').classList.toggle('active', mode === 'advanced');
+  document.getElementById('currentModeLabel').textContent = mode === 'beginner' 
+    ? 'Beginner Mode (Guided & Explainable)' 
+    : 'Advanced Mode (Raw Telemetry & ML Parameters)';
+  
+  const beginnerExplainer = document.getElementById('beginnerExplainer');
+  if (beginnerExplainer) beginnerExplainer.style.display = mode === 'beginner' ? 'block' : 'none';
+}
+
+function fillSample(url) {
+  document.getElementById('urlInput').value = url;
+  showAlert('Sample loaded. Click "Inspect URL" to analyze.', 'info');
+}
+
+async function analyzePhishing() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) {
+    showAlert('Please enter a URL to inspect.', 'warning');
+    return;
+  }
+
+  setLoading(true);
+  document.getElementById('resultSection').classList.add('d-none');
+  document.getElementById('emptyState').classList.add('d-none');
+
+  try {
+    const data = await cyberShieldFetch('/phishing/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ url })
+    });
+
+    if (!data.success) {
+      showAlert(data.error || 'Analysis failed. Please check input URL.', 'danger');
+      document.getElementById('emptyState').classList.remove('d-none');
+      return;
+    }
+
+    displayResult(data);
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+    document.getElementById('emptyState').classList.remove('d-none');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function displayResult(d) {
+  const colors = {
+    'Very Low': '#34c759',
+    'Low': '#00d9ff',
+    'Medium': '#ffd60a',
+    'High': '#ff9500',
+    'Critical': '#ff3366'
+  };
+  const c = colors[d.risk_level] || '#00d9ff';
+
+  const circle = document.getElementById('riskCircle');
+  circle.style.setProperty('--score-color', c);
+  circle.style.borderColor = c;
+
+  document.getElementById('riskScore').textContent = d.risk_score;
+  document.getElementById('riskScore').style.color = c;
+  document.getElementById('resultText').textContent = d.result;
+  document.getElementById('resultText').style.color = c;
+  document.getElementById('modelUsed').textContent = d.model_used || 'RandomForest ML v1.0';
+  document.getElementById('scanTime').textContent = new Date(d.timestamp).toLocaleString();
+
+  const badge = document.getElementById('riskBadge');
+  badge.textContent = d.risk_level + ' Risk';
+  badge.className = `badge badge-${d.risk_level.toLowerCase().replace(' ','-')}`;
+
+  document.getElementById('confidenceBadge').textContent = `Confidence: ${(d.confidence * 100).toFixed(1)}%`;
+
+  // Indicators
+  const inds = document.getElementById('indicatorsDiv');
+  inds.innerHTML = (d.indicators || []).map(i =>
+    `<div class="indicator-item ${d.risk_score < 30 ? 'indicator-safe' : ''}">
+       <i class="fas fa-${d.risk_score < 30 ? 'check-circle' : 'exclamation-triangle'}"></i>
+       <span>${i}</span>
+     </div>`
+  ).join('') || '<div class="text-muted small">No malicious indicators triggered.</div>';
+
+  // Feature table
+  const feats = d.features || {};
+  const ft = document.getElementById('featureTable');
+  ft.innerHTML = '<thead><tr><th>Extracted Feature</th><th>Computed Value</th></tr></thead><tbody>' +
+    Object.entries(feats).map(([k,v]) => {
+      const isBoolTrue = v === 1 || v === true;
+      const isBoolFalse = v === 0 || v === false;
+      const valColor = isBoolTrue ? 'text-danger' : isBoolFalse ? 'text-muted' : 'text-accent';
+      return `<tr><td class="text-muted small">${k.replace(/_/g,' ')}</td><td class="${valColor} font-monospace small">${v}</td></tr>`;
+    }).join('') + '</tbody>';
+
+  // Report links
+  if (d.detection_id) {
+    document.getElementById('pdfBtn').href = `/reports/${d.detection_id}/pdf`;
+    document.getElementById('csvBtn').href = `/reports/${d.detection_id}/csv`;
+  }
+
+  document.getElementById('resultSection').classList.remove('d-none');
+  document.getElementById('emptyState').classList.add('d-none');
+}
+
+function clearResult() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('resultSection').classList.add('d-none');
+  document.getElementById('emptyState').classList.remove('d-none');
+}
+
+function setLoading(show) {
+  document.getElementById('loadingDiv').classList.toggle('d-none', !show);
+  document.getElementById('analyzeBtn').disabled = show;
+}
+
+document.getElementById('urlInput')?.addEventListener('keypress', e => {
+  if (e.key === 'Enter') analyzePhishing();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Working Sessions{% endblock %}
+{% block page_title %}<i class="fas fa-clock me-2" style="color:var(--accent)"></i>Working Sessions{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card" style="--card-accent:#00d4ff">
+      <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+      <div class="stat-label">Today</div>
+      <div class="stat-value">{{ stats.today }}</div>
+      <div class="stat-sub">Sessions</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card" style="--card-accent:#00ff88">
+      <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
+      <div class="stat-label">This Week</div>
+      <div class="stat-value">{{ stats.week }}</div>
+      <div class="stat-sub">Sessions</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card" style="--card-accent:#ff8800">
+      <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+      <div class="stat-label">This Month</div>
+      <div class="stat-value">{{ stats.month_hours }}h</div>
+      <div class="stat-sub">Total hours</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card" style="--card-accent:#ffcc00">
+      <div class="stat-icon"><i class="fas fa-stopwatch"></i></div>
+      <div class="stat-label">Avg Duration</div>
+      <div class="stat-value">{{ stats.avg_duration }}</div>
+      <div class="stat-sub">Per session</div>
+    </div>
+  </div>
+</div>
+<div class="cyber-card">
+  <div class="cyber-card-header">
+    <i class="fas fa-list-alt"></i> Session History
+    <span class="ms-auto">
+      <span class="badge bg-success">{{ stats.active }} Active</span>
+      <span class="badge bg-secondary ms-1">{{ stats.total }} Total</span>
+    </span>
+  </div>
+  <div class="cyber-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark-cyber mb-0">
+        <thead><tr><th>#</th><th>Login</th><th>Logout</th><th>Duration</th><th>Last Activity</th><th>Location</th><th>Status</th></tr></thead>
+        <tbody>
+          {% if sessions %}
+            {% for s in sessions %}
+            <tr>
+              <td class="text-muted" style="font-size:0.75rem">#{{ s.id }}</td>
+              <td style="font-size:0.82rem">
+                <i class="fas fa-sign-in-alt text-success me-1"></i>
+                {{ s.login_at.strftime('%Y-%m-%d') }}<br>
+                <span class="text-muted">{{ s.login_at.strftime('%H:%M:%S') }}</span>
+              </td>
+              <td style="font-size:0.82rem">
+                {% if s.logout_at %}
+                  <i class="fas fa-sign-out-alt text-danger me-1"></i>
+                  {{ s.logout_at.strftime('%Y-%m-%d') }}<br>
+                  <span class="text-muted">{{ s.logout_at.strftime('%H:%M:%S') }}</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td><span class="badge" style="background:rgba(0,212,255,0.15);color:#00d4ff;border:1px solid rgba(0,212,255,0.3)">{{ s.duration_str }}</span></td>
+              <td style="font-size:0.78rem" class="text-muted">{{ s.last_activity.strftime('%H:%M:%S') }}</td>
+              <td style="font-size:0.82rem">
+                {% if s.login_city or s.login_country %}
+                  <i class="fas fa-map-marker-alt me-1" style="color:var(--accent)"></i>{{ s.login_city or '' }}{% if s.login_city and s.login_country %}, {% endif %}{{ s.login_country or '' }}
+                {% else %}
+                  <span class="text-muted"><i class="fas fa-map-marker-slash me-1"></i>Unknown</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.status == 'active' %}
+                  <span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size:0.5rem"></i>Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Closed</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-clock me-2"></i>No sessions recorded yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

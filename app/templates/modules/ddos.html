@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% block title %}DDoS Traffic Detection{% endblock %}
+{% block page_title %}<i class="fas fa-bolt me-2 text-accent"></i>DDoS Traffic Detection{% endblock %}
+
+{% block content %}
+<!-- Mode Switcher -->
+<div class="mode-toggle-card">
+  <div class="d-flex align-items-center gap-2">
+    <i class="fas fa-sliders-h text-accent"></i>
+    <span class="small fw-bold">Analysis Profile:</span>
+    <span id="currentModeLabel" class="text-secondary small">Beginner Mode (Guided &amp; Explainable)</span>
+  </div>
+  <div class="mode-switcher-pill">
+    <button class="mode-pill-btn active" id="btnModeBeginner" onclick="switchMode('beginner')">
+      <i class="fas fa-user-graduate"></i>Beginner
+    </button>
+    <button class="mode-pill-btn" id="btnModeAdvanced" onclick="switchMode('advanced')">
+      <i class="fas fa-terminal"></i>Advanced
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-upload me-2"></i>Flow Metric Telemetry</span>
+        <span class="badge bg-secondary">ML Anomaly Engine</span>
+      </div>
+      <div class="cyber-card-body">
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#ddosManualTab"><i class="fas fa-sliders-h me-1"></i>Manual Flow Stats</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ddosFileTab"><i class="fas fa-file-csv me-1"></i>CSV / PCAP File</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="ddosManualTab">
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label">Total Packets</label>
+                <input class="form-control" id="d_pkt" type="number" placeholder="e.g. 15000">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Duration (sec)</label>
+                <input class="form-control" id="d_dur" type="number" placeholder="e.g. 5">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Unique Source IPs</label>
+                <input class="form-control" id="d_src" type="number" placeholder="e.g. 2">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Unique Dst Ports</label>
+                <input class="form-control" id="d_ports" type="number" placeholder="e.g. 1">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Top Src Concentration (0-1)</label>
+                <input class="form-control" id="d_conc" type="number" step="0.01" placeholder="e.g. 0.95">
+              </div>
+              <div class="col-6">
+                <label class="form-label">SYN Ratio (0-1)</label>
+                <input class="form-control" id="d_syn" type="number" step="0.01" placeholder="e.g. 0.90">
+              </div>
+            </div>
+
+            <!-- Quick Samples -->
+            <div class="mb-3">
+              <label class="form-label small text-muted">Quick Fill Test Samples:</label>
+              <div class="sample-chips-container">
+                <span class="sample-chip" onclick="fillDDoSSample(25000, 3, 2, 1, 0.95, 0.92)">
+                  <i class="fas fa-arrow-down me-1"></i>Massive SYN Flood
+                </span>
+                <span class="sample-chip" onclick="fillDDoSSample(18000, 4, 1, 1, 0.98, 0.05)">
+                  <i class="fas fa-arrow-down me-1"></i>UDP Packet Storm
+                </span>
+                <span class="sample-chip" onclick="fillDDoSSample(200, 30, 45, 8, 0.08, 0.12)">
+                  <i class="fas fa-arrow-down me-1"></i>Normal Web Traffic
+                </span>
+              </div>
+            </div>
+
+            <button class="btn btn-cyber w-100" id="btnAnalyzeDDoS" onclick="analyzeDDoSManual()">
+              <i class="fas fa-search me-2"></i>Evaluate DDoS Risk
+            </button>
+          </div>
+
+          <div class="tab-pane fade" id="ddosFileTab">
+            <div class="upload-zone" onclick="document.getElementById('ddosFile').click()">
+              <i class="fas fa-file-csv"></i>
+              <p id="ddosFileName">Drop CSV or PCAP capture here</p>
+              <div class="upload-hint">Ingests NetFlow, CICIDS flow CSVs or PCAP traces (Max 16MB)</div>
+              <input type="file" id="ddosFile" accept=".csv,.pcap,.pcapng" onchange="previewDDoSFile(this)">
+            </div>
+            <button class="btn btn-cyber w-100 mt-3" onclick="analyzeDDoSFile()">
+              <i class="fas fa-microchip me-2"></i>Process Flow Dataset
+            </button>
+          </div>
+        </div>
+
+        <div id="ddosLoading" class="text-center mt-3 d-none">
+          <div class="cyber-spinner mx-auto mb-2"></div>
+          <small class="text-secondary">Running machine learning model &amp; volumetric rate scoring...</small>
+        </div>
+
+        <!-- Explainer -->
+        <div id="beginnerExplainer" class="attack-explainer-card">
+          <div class="explainer-title"><i class="fas fa-lightbulb"></i> What is a Distributed Denial of Service (DDoS)?</div>
+          <p class="text-secondary small mb-2">
+            A DDoS attack attempts to overwhelm a target server, firewall, or network with a flood of malicious traffic from multiple coordinated sources, rendering it unavailable to legitimate users.
+          </p>
+          <div class="attack-step-diagram">
+            <div class="attack-node threat">Botnet Zombies<br><small class="text-muted">Thousands of nodes</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node text-danger">Gigabit Flood<br><small class="text-muted">SYN / UDP / HTTP</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node victim">Target Server<br><small class="text-muted">Out of Memory / Crash</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Library -->
+    <div class="cyber-card mt-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-terminal me-2 text-accent"></i>SOC Analyst Command Library</span>
+        <span class="badge bg-secondary">CLI Verification</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-muted small mb-3">Commands for monitoring live connection states and identifying top attacking endpoints.</p>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-list-ol text-accent"></i> Connection States Breakdown</span>
+            <span class="command-tag">netstat</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="ddoscmd1">netstat -ant | awk '{print $6}' | sort | uniq -c | sort -n</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('ddoscmd1').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-users-slash text-accent"></i> Top 10 IP Connection Concentrations</span>
+            <span class="command-tag">ss</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="ddoscmd2">ss -tan state established | awk '{print $4}' | cut -d: -f1 | sort | uniq -c | sort -nr | head -n 10</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('ddoscmd2').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div class="col-lg-7" id="ddosResultCol">
+    <div class="cyber-card text-center py-5">
+      <i class="fas fa-bolt fa-3x mb-3 text-muted"></i>
+      <h5 class="text-muted">Enter traffic parameters or upload a capture</h5>
+      <p class="text-secondary small">Attack pattern classification, PPS velocity, and volumetric stats will appear here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMode = 'beginner';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('btnModeBeginner').classList.toggle('active', mode === 'beginner');
+  document.getElementById('btnModeAdvanced').classList.toggle('active', mode === 'advanced');
+  document.getElementById('currentModeLabel').textContent = mode === 'beginner' 
+    ? 'Beginner Mode (Guided & Explainable)' 
+    : 'Advanced Mode (Raw Telemetry & PPS Rates)';
+  
+  const beginnerExplainer = document.getElementById('beginnerExplainer');
+  if (beginnerExplainer) beginnerExplainer.style.display = mode === 'beginner' ? 'block' : 'none';
+}
+
+function fillDDoSSample(pkt, dur, src, ports, conc, syn) {
+  document.getElementById('d_pkt').value = pkt;
+  document.getElementById('d_dur').value = dur;
+  document.getElementById('d_src').value = src;
+  document.getElementById('d_ports').value = ports;
+  document.getElementById('d_conc').value = conc;
+  document.getElementById('d_syn').value = syn;
+  showAlert('Flow sample loaded. Click "Evaluate DDoS Risk" to analyze.', 'info');
+}
+
+function previewDDoSFile(inp) {
+  if (inp.files[0]) {
+    document.getElementById('ddosFileName').textContent = inp.files[0].name;
+    inp.closest('.upload-zone').style.borderColor = 'var(--accent)';
+  }
+}
+
+async function analyzeDDoSManual() {
+  const data = {
+    packet_count: parseFloat(document.getElementById('d_pkt').value) || 0,
+    duration_seconds: parseFloat(document.getElementById('d_dur').value) || 1,
+    unique_src_ips: parseFloat(document.getElementById('d_src').value) || 1,
+    unique_dst_ports: parseFloat(document.getElementById('d_ports').value) || 1,
+    src_concentration: parseFloat(document.getElementById('d_conc').value) || 0,
+    syn_ratio: parseFloat(document.getElementById('d_syn').value) || 0
+  };
+
+  if (!data.packet_count) {
+    showAlert('Please specify total packet count.', 'warning');
+    return;
+  }
+
+  await executeDDoS('/ddos/api/analyze', JSON.stringify(data));
+}
+
+async function analyzeDDoSFile() {
+  const f = document.getElementById('ddosFile').files[0];
+  if (!f) {
+    showAlert('Please select a CSV or PCAP file.', 'warning');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', f);
+  await executeDDoS('/ddos/api/analyze', fd);
+}
+
+async function executeDDoS(url, body) {
+  document.getElementById('ddosLoading').classList.remove('d-none');
+  try {
+    const data = await cyberShieldFetch(url, { method: 'POST', body });
+    if (!data.success) {
+      showAlert(data.error || 'DDoS analysis failed.', 'danger');
+      return;
+    }
+    renderDDoSResult(data);
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  } finally {
+    document.getElementById('ddosLoading').classList.add('d-none');
+  }
+}
+
+function renderDDoSResult(d) {
+  const col = document.getElementById('ddosResultCol');
+  const colors = {
+    'Very Low': '#34c759',
+    'Low': '#00d9ff',
+    'Medium': '#ffd60a',
+    'High': '#ff9500',
+    'Critical': '#ff3366'
+  };
+  const c = colors[d.risk_level] || '#00d9ff';
+  const inds = (d.indicators || []).map(i =>
+    `<div class="indicator-item ${d.risk_score < 30 ? 'indicator-safe' : ''}">
+       <i class="fas fa-${d.risk_score < 30 ? 'check-circle' : 'bolt'}"></i>
+       <span>${i}</span>
+     </div>`
+  ).join('') || '<div class="text-muted small">No DDoS traffic anomalies identified.</div>';
+
+  const st = (d.details || {}).traffic_stats || {};
+
+  col.innerHTML = `
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-chart-pie me-2"></i>DDoS Verdict &amp; Threat Pattern</span>
+        <span class="badge bg-secondary">${new Date(d.timestamp).toLocaleString()}</span>
+      </div>
+      <div class="cyber-card-body">
+        <div class="d-flex align-items-center gap-4 mb-3">
+          <div class="risk-score-circle" style="--score-color:${c};border-color:${c}">
+            <div class="score-num" style="color:${c}">${d.risk_score}</div>
+            <div class="score-label">/ 100 RISK</div>
+          </div>
+          <div>
+            <h3 class="fw-bold mb-1" style="color:${c}">${d.result}</h3>
+            <span class="badge badge-${(d.risk_level||'low').toLowerCase().replace(' ','-')} me-2">${d.risk_level} Risk</span>
+            <span class="badge bg-dark border border-secondary text-secondary">${d.attack_pattern || 'Normal Traffic'}</span>
+            <div class="text-secondary small mt-1"><i class="fas fa-microchip me-1 text-accent"></i>${d.model_used || 'Hybrid ML & Volumetric Rate Engine'}</div>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-2">
+          ${Object.entries(st).filter(([k]) => !['columns_found','source'].includes(k)).map(([k,v]) =>
+            `<div class="col-4 p-2 rounded text-center" style="background:#0e0e0e;border:1px solid #292929">
+              <div class="text-muted small">${k.replace(/_/g,' ')}</div>
+              <div class="fw-bold text-accent font-monospace">${typeof v === 'number' ? v.toFixed(2) : v}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-list me-2 text-warning"></i>Traffic Flow Indicators</span>
+      </div>
+      <div class="cyber-card-body">${inds}</div>
+    </div>
+
+    ${d.detection_id ? `
+    <div class="d-flex gap-2">
+      <a href="/reports/${d.detection_id}/pdf" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-pdf me-1"></i>Download PDF</a>
+      <a href="/reports/${d.detection_id}/csv" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-csv me-1"></i>Download CSV</a>
+    </div>` : ''}`;
+}
+</script>
+{% endblock %}

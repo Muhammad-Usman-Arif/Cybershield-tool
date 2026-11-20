@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Sign In{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+  <!-- Left Panel: Animated Cyber Background -->
+  <div class="auth-left d-none d-lg-flex">
+    <div class="cyber-grid-bg"></div>
+    <div class="auth-brand">
+      <div class="auth-logo-icon">
+        <i class="fas fa-shield-halved fa-3x"></i>
+      </div>
+      <h1 class="auth-brand-name">CyberShield AI</h1>
+      <p class="auth-brand-tagline">AI-Powered Multi-Threat Detection &amp; Risk Assessment</p>
+      <div class="auth-features mt-4">
+        <div class="auth-feature"><i class="fas fa-check-circle me-2 text-success"></i>Phishing URL Detection</div>
+        <div class="auth-feature"><i class="fas fa-check-circle me-2 text-success"></i>IP &amp; DNS Spoofing Analysis</div>
+        <div class="auth-feature"><i class="fas fa-check-circle me-2 text-success"></i>DDoS Traffic Detection</div>
+        <div class="auth-feature"><i class="fas fa-check-circle me-2 text-success"></i>Static Malware Analysis</div>
+        <div class="auth-feature"><i class="fas fa-check-circle me-2 text-success"></i>Brute Force Log Analysis</div>
+      </div>
+    </div>
+    <div class="scanline-effect"></div>
+  </div>
+
+  <!-- Right Panel: Login Form -->
+  <div class="auth-right">
+    <div class="auth-form-card">
+      <div class="auth-form-logo d-lg-none mb-3">
+        <i class="fas fa-shield-halved me-2"></i>CyberShield AI
+      </div>
+      <h2 class="auth-form-title">Welcome Back</h2>
+      <p class="auth-form-subtitle text-muted">Sign in to your security dashboard</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }} py-2">
+              <i class="fas fa-info-circle me-2"></i>{{ msg }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.username.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-user"></i></span>
+            {{ form.username(class="form-control auth-input",
+               placeholder="Enter username",
+               autofocus=true) }}
+          </div>
+          {% for err in form.username.errors %}
+            <div class="form-text text-danger"><i class="fas fa-times me-1"></i>{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.password.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-lock"></i></span>
+            {{ form.password(class="form-control auth-input", placeholder="Enter password", id="loginPass") }}
+            <button class="btn auth-input-icon border border-secondary" type="button"
+                    onclick="togglePass('loginPass', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          {% for err in form.password.errors %}
+            <div class="form-text text-danger"><i class="fas fa-times me-1"></i>{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="form-check">
+            {{ form.remember(class="form-check-input") }}
+            <label class="form-check-label text-muted" for="remember">{{ form.remember.label.text }}</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-cyber w-100 mb-3">
+          <i class="fas fa-sign-in-alt me-2"></i>{{ form.submit.label.text }}
+        </button>
+
+        <p class="text-center text-muted mb-0">
+          Don't have an account?
+          <a href="{{ url_for('auth.register') }}" class="text-cyan">Create account</a>
+        </p>
+      </form>
+
+      <div class="auth-divider my-3"><span>Default Credentials</span></div>
+      <div class="auth-hint">
+        <i class="fas fa-info-circle me-1 text-cyan"></i>
+        Default: <code>admin</code> / <code>Admin@12345</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePass(id, btn) {
+  const inp = document.getElementById(id);
+  const icon = btn.querySelector('i');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+</script>
+{% endblock %}

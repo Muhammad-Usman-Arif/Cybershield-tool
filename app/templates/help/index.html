@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Knowledge Base & Help Center{% endblock %}
+{% block page_title %}<i class="fas fa-book-open me-2 text-accent"></i>Knowledge Base &amp; SOC Playbook{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-shield-alt me-2"></i>CyberShield AI — Platform Operational Playbook</span>
+        <span class="badge bg-secondary">SOC Reference Guide v1.0</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-secondary mb-4">
+          Welcome to the CyberShield AI SOC Analyst Knowledge Base. This portal contains comprehensive operational documentation, detection engine mechanics, threat triage workflows, and practical CLI commands for network and endpoint defense.
+        </p>
+
+        <!-- Quick Tabs -->
+        <ul class="nav nav-tabs mb-4" id="helpTabs">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#quickstart"><i class="fas fa-play me-1"></i>Quick Start</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#phishing-guide"><i class="fas fa-fish me-1"></i>Phishing</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#spoofing-guide"><i class="fas fa-network-wired me-1"></i>IP &amp; DNS Spoofing</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#ddos-guide"><i class="fas fa-bolt me-1"></i>DDoS Traffic</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#bruteforce-guide"><i class="fas fa-key me-1"></i>Brute Force</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#malware-guide"><i class="fas fa-bug me-1"></i>Malware Analysis</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#faq"><i class="fas fa-question-circle me-1"></i>FAQ &amp; Troubleshooting</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Quickstart Tab -->
+          <div class="tab-pane fade show active" id="quickstart">
+            <h5 class="text-accent mb-3"><i class="fas fa-bolt me-2"></i>How to Conduct Threat Analysis</h5>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="p-3 rounded" style="background:#0e0e0e;border:1px solid #292929;height:100%">
+                  <div class="text-accent fw-bold mb-2">1. Select Engine</div>
+                  <p class="text-muted small mb-0">Choose from the 6 detection tools in the left navigation sidebar based on your incident artifact (URL, IP, PCAP, Auth log, or Binary).</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 rounded" style="background:#0e0e0e;border:1px solid #292929;height:100%">
+                  <div class="text-accent fw-bold mb-2">2. Choose Mode</div>
+                  <p class="text-muted small mb-0">Use <strong>Beginner Mode</strong> for guided analysis with preloaded samples, or switch to <strong>Advanced Mode</strong> for raw packet telemetry, entropy thresholds, and custom inspection.</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 rounded" style="background:#0e0e0e;border:1px solid #292929;height:100%">
+                  <div class="text-accent fw-bold mb-2">3. Triage &amp; Export</div>
+                  <p class="text-muted small mb-0">Review the risk score, forensic indicators, and recommended remediation actions. Download executive PDF or multi-sheet Excel reports for incident response tracking.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phishing Guide -->
+          <div class="tab-pane fade" id="phishing-guide">
+            <h5 class="text-accent mb-2">Phishing URL Detection Engine</h5>
+            <p class="text-secondary small">Evaluates URLs for deceptive lexical features, homoglyph characters, entropy spikes, and known credential harvesting patterns.</p>
+            <div class="p-3 rounded mb-3" style="background:#0c0c0c;border:1px solid #292929">
+              <div class="fw-bold text-light mb-1">Key Indicators Monitored:</div>
+              <ul class="text-muted small mb-0 ps-3">
+                <li>Raw IP address used in place of domain name</li>
+                <li>Presence of deceptive brand keywords in subdomains (e.g. <code>paypal-secure.verify-account.com</code>)</li>
+                <li>Excessive URL string length and Shannon entropy spikes</li>
+                <li>Suspicious URL shorteners and redirect patterns</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Spoofing Guide -->
+          <div class="tab-pane fade" id="spoofing-guide">
+            <h5 class="text-accent mb-2">IP &amp; DNS Spoofing Detection</h5>
+            <p class="text-secondary small">Validates packet origin authenticity and DNS resolver integrity using RFC standards, hop count TTL heuristics, and recursive resolver comparison.</p>
+            <div class="p-3 rounded mb-3" style="background:#0c0c0c;border:1px solid #292929">
+              <div class="fw-bold text-light mb-1">Detection Logic:</div>
+              <ul class="text-muted small mb-0 ps-3">
+                <li>RFC 1918 private addresses arriving across WAN boundaries</li>
+                <li>Loopback (127.0.0.0/8) or APIPA (169.254.0.0/16) in transit traffic</li>
+                <li>TTL anomalies indicating forged intermediate hops</li>
+                <li>DGA (Domain Generation Algorithm) entropy and recursive resolver discrepancies</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- DDoS Guide -->
+          <div class="tab-pane fade" id="ddos-guide">
+            <h5 class="text-accent mb-2">DDoS Traffic Analysis Engine</h5>
+            <p class="text-secondary small">Hybrid Machine Learning and flow-metric heuristics to detect volumetric floods, SYN floods, UDP amplification, and slowloris exhaustion.</p>
+            <div class="p-3 rounded mb-3" style="background:#0c0c0c;border:1px solid #292929">
+              <div class="fw-bold text-light mb-1">Key Flow Metrics:</div>
+              <ul class="text-muted small mb-0 ps-3">
+                <li>Packets-per-second (PPS) and bytes-per-second (BPS) velocity</li>
+                <li>SYN-to-ACK ratio imbalance (TCP handshake starvation)</li>
+                <li>Top source IP concentration ratio</li>
+                <li>Destination port diversity vs single-target saturation</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Brute Force Guide -->
+          <div class="tab-pane fade" id="bruteforce-guide">
+            <h5 class="text-accent mb-2">Brute Force Detection Engine</h5>
+            <p class="text-secondary small">Sliding-window temporal log parser capable of ingesting Linux syslog, OpenSSH, Apache/Nginx, Windows Security Events, and PAM auth logs.</p>
+            <div class="p-3 rounded mb-3" style="background:#0c0c0c;border:1px solid #292929">
+              <div class="fw-bold text-light mb-1">Supported Auth Formats:</div>
+              <ul class="text-muted small mb-0 ps-3">
+                <li><code>Failed password for root from &lt;IP&gt; port &lt;PORT&gt; ssh2</code></li>
+                <li><code>Invalid user &lt;USER&gt; from &lt;IP&gt;</code></li>
+                <li>HTTP 401 / 403 authorization bursts in web logs</li>
+                <li>Distributed multi-source password spraying patterns</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Malware Guide -->
+          <div class="tab-pane fade" id="malware-guide">
+            <h5 class="text-accent mb-2">Static Malware Analysis Engine</h5>
+            <p class="text-secondary small">Safely inspects binary artifacts without execution. Computes cryptographic hashes (SHA-256), validates magic bytes against file extensions, assesses section entropy, and matches YARA signatures.</p>
+            <div class="p-3 rounded mb-3" style="background:#0c0c0c;border:1px solid #292929">
+              <div class="fw-bold text-light mb-1">Safety Guarantee:</div>
+              <ul class="text-muted small mb-0 ps-3">
+                <li>All uploaded files are subjected strictly to static byte-level inspection.</li>
+                <li>Uploaded artifacts are deleted immediately after cryptographic extraction.</li>
+                <li>Entropy scores above 7.0/8.0 flag potential packers or cryptors (UPX, VMProtect).</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- FAQ Tab -->
+          <div class="tab-pane fade" id="faq">
+            <h5 class="text-accent mb-3">Frequently Asked Questions</h5>
+            <div class="accordion accordion-flush" id="faqAccordion">
+              <div class="accordion-item" style="background:#0e0e0e;border:1px solid #292929;border-radius:6px;margin-bottom:8px">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed text-light" style="background:transparent" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                    How do I export enterprise Excel reports with charts?
+                  </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                  <div class="accordion-body text-muted small">
+                    Navigate to <strong>Detection History</strong> or <strong>Reports</strong> and click <strong>Export Excel (.xlsx)</strong>. You can filter by detection tool, risk level, or date range. The downloaded workbook includes 4 structured worksheets with executive KPI cards and embedded openpyxl charts.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background:#0e0e0e;border:1px solid #292929;border-radius:6px;margin-bottom:8px">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed text-light" style="background:transparent" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                    How does location tracking work on CyberShield AI?
+                  </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                  <div class="accordion-body text-muted small">
+                    Location tracking is completely consent-based. The application asks for browser geolocation permission. If granted, your working session logs geographic coordinates and city data. If denied, the system displays "Not Available" without fabricating fictitious data.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background:#0e0e0e;border:1px solid #292929;border-radius:6px">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed text-light" style="background:transparent" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                    What should I do if an API request fails with an error?
+                  </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                  <div class="accordion-body text-muted small">
+                    All API endpoints are protected with session authentication and CSRF validation. If your session expires, the application automatically prompts you to log back in without crashing. Check your browser network tab for specific diagnostic codes.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

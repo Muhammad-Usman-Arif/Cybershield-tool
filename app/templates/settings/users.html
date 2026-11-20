@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}<i class="fas fa-users-cog me-2 text-danger"></i>User Management (Admin Console){% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-users me-2"></i>Platform Operator Accounts</span>
+        <button class="btn btn-cyber" data-bs-toggle="modal" data-bs-target="#createUserModal">
+          <i class="fas fa-user-plus me-1"></i>New User
+        </button>
+      </div>
+      <div class="cyber-card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-dark-cyber">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email Address</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td style="font-family:'Share Tech Mono',monospace;color:var(--text-muted)">USR-{{ "%03d"|format(u.id) }}</td>
+                <td class="fw-bold text-light">
+                  <i class="fas fa-user-circle me-1 text-accent"></i>{{ u.username }}
+                  {% if u.id == current_user.id %}
+                  <span class="badge bg-secondary ms-1">You</span>
+                  {% endif %}
+                </td>
+                <td class="text-secondary small">{{ u.email }}</td>
+                <td>
+                  <span class="badge {% if u.role == 'admin' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+                    {{ u.role|upper }}
+                  </span>
+                </td>
+                <td>
+                  <span id="user-status-{{ u.id }}" class="badge {% if u.is_active %}bg-success{% else %}bg-secondary text-muted{% endif %}">
+                    {{ 'ACTIVE' if u.is_active else 'DISABLED' }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                <td class="text-muted small">{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Never' }}</td>
+                <td>
+                  {% if u.id != current_user.id %}
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-dark-subtle" onclick="toggleUserStatus({{ u.id }})">
+                      <i class="fas fa-power-off me-1"></i>Toggle
+                    </button>
+                    <button class="btn btn-dark-subtle" onclick="toggleRole({{ u.id }}, '{{ 'analyst' if u.role == 'admin' else 'admin' }}')">
+                      <i class="fas fa-user-shield me-1"></i>Make {{ 'Analyst' if u.role == 'admin' else 'Admin' }}
+                    </button>
+                  </div>
+                  {% else %}
+                  <span class="text-muted small">Current Session</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create New User -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title font-rajdhani"><i class="fas fa-user-plus text-accent me-2"></i>Provision Operator Account</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="newUsername" placeholder="e.g. jdoe_analyst" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control" id="newEmail" placeholder="analyst@cybershield.local" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Initial Password</label>
+          <input type="password" class="form-control" id="newPassword" placeholder="Min 8 characters" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Access Role</label>
+          <select class="form-select" id="newRole">
+            <option value="analyst" selected>Security Analyst (Default)</option>
+            <option value="admin">System Administrator</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark-subtle" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-cyber" onclick="submitCreateUser()">
+          <i class="fas fa-check me-1"></i>Create Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function toggleUserStatus(userId) {
+  try {
+    const res = await cyberShieldFetch(`/settings/api/users/${userId}/toggle-status`, { method: 'POST' });
+    if (res.success) {
+      showAlert('User status updated successfully.', 'success');
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      showAlert(res.error || 'Failed to update user', 'danger');
+    }
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  }
+}
+
+async function toggleRole(userId, newRole) {
+  if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+  try {
+    const res = await cyberShieldFetch(`/settings/api/users/${userId}/role`, {
+      method: 'POST',
+      body: JSON.stringify({ role: newRole })
+    });
+    if (res.success) {
+      showAlert('User role updated.', 'success');
+      setTimeout(() => window.location.reload(), 800);
+    } else {
+      showAlert(res.error || 'Failed to update role', 'danger');
+    }
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  }
+}
+
+async function submitCreateUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const email = document.getElementById('newEmail').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role = document.getElementById('newRole').value;
+
+  if (!username || !email || !password) {
+    showAlert('Please fill in all fields.', 'warning');
+    return;
+  }
+
+  try {
+    const res = await cyberShieldFetch('/settings/api/users/create', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password, role })
+    });
+    if (res.success) {
+      showAlert('User created successfully!', 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showAlert(res.error || 'Failed to create user', 'danger');
+    }
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Secrets
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Temporary and upload artifacts
+uploads/*
+!uploads/.gitkeep
+tests/sample_detection_report.xlsx
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp

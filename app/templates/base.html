@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}CyberShield AI{% endblock %} — CyberShield AI</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cybershield.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <i class="fas fa-shield-halved"></i>
+    <span>CyberShield AI</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">OVERVIEW</div>
+    <a href="{{ url_for('dashboard.index') }}"
+       class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <i class="fas fa-tachometer-alt"></i><span>SOC Dashboard</span>
+    </a>
+
+    <div class="nav-section-label mt-2">DETECTION MODULES</div>
+
+    <a href="{{ url_for('phishing_bp.index') }}"
+       class="nav-item {% if 'phishing' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-fish"></i><span>Phishing Detection</span>
+    </a>
+    <a href="{{ url_for('ip_spoofing_bp.index') }}"
+       class="nav-item {% if 'ip_spoofing' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-network-wired"></i><span>IP Spoofing</span>
+    </a>
+    <a href="{{ url_for('dns_spoofing_bp.index') }}"
+       class="nav-item {% if 'dns_spoofing' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-server"></i><span>DNS Spoofing</span>
+    </a>
+    <a href="{{ url_for('ddos_bp.index') }}"
+       class="nav-item {% if request.endpoint and 'ddos' in request.endpoint %}active{% endif %}">
+      <i class="fas fa-bolt"></i><span>DDoS Detection</span>
+    </a>
+    <a href="{{ url_for('brute_force_bp.index') }}"
+       class="nav-item {% if 'brute_force' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-key"></i><span>Brute Force</span>
+    </a>
+    <a href="{{ url_for('malware_bp.index') }}"
+       class="nav-item {% if 'malware' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-bug"></i><span>Malware Analysis</span>
+    </a>
+
+    <div class="nav-section-label mt-2">INTELLIGENCE &amp; MONITORING</div>
+
+    <a href="{{ url_for('monitor_bp.index') }}"
+       class="nav-item {% if request.endpoint == 'monitor_bp.index' %}active{% endif %}">
+      <i class="fas fa-satellite-dish"></i><span>Live Monitoring</span>
+      <span class="badge bg-success ms-auto" style="font-size:0.6rem">BETA</span>
+    </a>
+    <a href="{{ url_for('monitor_bp.threat_intel') }}"
+       class="nav-item {% if 'threat_intel' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-shield-virus"></i><span>Threat Intelligence</span>
+    </a>
+    <a href="{{ url_for('monitor_bp.alerts') }}"
+       class="nav-item {% if 'alerts' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-bell"></i><span>Security Alerts</span>
+    </a>
+
+    <div class="nav-section-label mt-2">MY ACTIVITY &amp; AUDITS</div>
+
+    <a href="{{ url_for('history_bp.index') }}"
+       class="nav-item {% if 'history' in (request.endpoint or '') and 'location' not in request.endpoint %}active{% endif %}">
+      <i class="fas fa-history"></i><span>Detection History</span>
+    </a>
+    <a href="{{ url_for('reports_bp.index') }}"
+       class="nav-item {% if 'reports' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-file-excel"></i><span>Export Reports</span>
+    </a>
+    <a href="{{ url_for('location.location_history_page') }}"
+       class="nav-item {% if request.endpoint and 'location' in request.endpoint and 'admin' not in request.path %}active{% endif %}">
+      <i class="fas fa-map-marker-alt"></i><span>Location History</span>
+    </a>
+    <a href="{{ url_for('sessions_bp.index') }}"
+       class="nav-item {% if 'sessions' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-clock"></i><span>Working Sessions</span>
+    </a>
+
+    <div class="nav-section-label mt-2">ACCOUNT &amp; HELP</div>
+
+    <a href="{{ url_for('settings_bp.index') }}"
+       class="nav-item {% if request.endpoint == 'settings_bp.index' %}active{% endif %}">
+      <i class="fas fa-cog"></i><span>Settings &amp; Profile</span>
+    </a>
+    <a href="{{ url_for('help_bp.index') }}"
+       class="nav-item {% if 'help' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-book-open"></i><span>Help &amp; SOC Guide</span>
+    </a>
+
+    {% if current_user.role == 'admin' %}
+    <div class="nav-section-label mt-2 text-danger">ADMIN CONTROLS</div>
+    <a href="{{ url_for('settings_bp.users_list') }}"
+       class="nav-item {% if 'users' in (request.endpoint or '') %}active{% endif %}">
+      <i class="fas fa-users-cog text-danger"></i><span>User Management</span>
+    </a>
+    <a href="{{ url_for('location.admin_overview') }}"
+       class="nav-item {% if request.endpoint and 'location' in request.endpoint and 'admin' in request.path %}active{% endif %}">
+      <i class="fas fa-globe text-danger"></i><span>Global Locations</span>
+    </a>
+    {% endif %}
+
+    <div class="nav-section-label mt-2">SESSION</div>
+    <a href="{{ url_for('auth.logout') }}" class="nav-item text-danger">
+      <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <i class="fas fa-user-circle me-2"></i>
+    <span class="text-truncate">{{ current_user.username }}</span>
+    <span class="ms-auto badge {% if current_user.role == 'admin' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+      {{ current_user.role|upper }}
+    </span>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MAIN CONTENT ══════════════════════════ -->
+<div class="main-content" id="mainContent">
+
+  <!-- Top Navbar -->
+  <nav class="topnav">
+    <button class="btn btn-link sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars fa-lg"></i>
+    </button>
+    <div class="topnav-title">
+      {% block page_title %}Dashboard{% endblock %}
+    </div>
+    <div class="topnav-right">
+      <span class="system-status">
+        <span class="status-dot online"></span> System Online
+      </span>
+      <span class="topnav-time" id="navTime"></span>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  <div class="flash-container px-4 pt-2">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+          <i class="fas fa-{% if cat == 'success' %}check-circle{% elif cat == 'danger' %}exclamation-circle{% elif cat == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  </div>
+
+  <!-- Page Content -->
+  <div class="content-wrapper">
+    {% block content %}{% endblock %}
+  </div>
+
+</div><!-- /main-content -->
+
+{% else %}
+  <!-- Auth layout (no sidebar) -->
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Clock in topnav
+function updateClock() {
+  const el = document.getElementById('navTime');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}
+setInterval(updateClock, 1000); updateClock();
+
+// Sidebar toggle
+document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainContent').classList.toggle('expanded');
+});
+</script>
+
+<!-- Common Module JavaScript -->
+<script src="{{ url_for('static', filename='js/module_common.js') }}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

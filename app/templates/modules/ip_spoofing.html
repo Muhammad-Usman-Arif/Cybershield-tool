@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% block title %}IP Spoofing Detection{% endblock %}
+{% block page_title %}<i class="fas fa-network-wired me-2 text-accent"></i>IP Spoofing Detection{% endblock %}
+
+{% block content %}
+<!-- Mode Switcher -->
+<div class="mode-toggle-card">
+  <div class="d-flex align-items-center gap-2">
+    <i class="fas fa-sliders-h text-accent"></i>
+    <span class="small fw-bold">Analysis Profile:</span>
+    <span id="currentModeLabel" class="text-secondary small">Beginner Mode (Guided &amp; Explainable)</span>
+  </div>
+  <div class="mode-switcher-pill">
+    <button class="mode-pill-btn active" id="btnModeBeginner" onclick="switchMode('beginner')">
+      <i class="fas fa-user-graduate"></i>Beginner
+    </button>
+    <button class="mode-pill-btn" id="btnModeAdvanced" onclick="switchMode('advanced')">
+      <i class="fas fa-terminal"></i>Advanced
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="cyber-card">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-network-wired me-2"></i>Packet &amp; PCAP Telemetry</span>
+        <span class="badge bg-secondary">TTL &amp; RFC Check</span>
+      </div>
+      <div class="cyber-card-body">
+        <ul class="nav nav-tabs mb-3" id="ipTabs">
+          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#manualTab"><i class="fas fa-keyboard me-1"></i>Manual Entry</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#pcapTab"><i class="fas fa-file-code me-1"></i>PCAP Upload</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Manual Tab -->
+          <div class="tab-pane fade show active" id="manualTab">
+            <div class="mb-3">
+              <label class="form-label">Source IP Address</label>
+              <input class="form-control" id="srcIp" placeholder="e.g. 10.0.0.1 or 127.0.0.5">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Destination IP Address</label>
+              <input class="form-control" id="dstIp" placeholder="e.g. 192.168.1.1 or 8.8.8.8">
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Time to Live (TTL)</label>
+                <input class="form-control" id="ttlVal" type="number" min="1" max="255" value="64">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Protocol</label>
+                <select class="form-select" id="protoVal">
+                  <option selected>TCP</option>
+                  <option>UDP</option>
+                  <option>ICMP</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Quick Samples -->
+            <div class="mb-3">
+              <label class="form-label small text-muted">Quick Fill Test Samples:</label>
+              <div class="sample-chips-container">
+                <span class="sample-chip" onclick="fillIPSample('10.0.0.1', '192.168.1.50', 5, 'TCP')">
+                  <i class="fas fa-arrow-down me-1"></i>Private RFC Cross-WAN
+                </span>
+                <span class="sample-chip" onclick="fillIPSample('127.0.0.1', '10.0.0.2', 128, 'UDP')">
+                  <i class="fas fa-arrow-down me-1"></i>Loopback Forged
+                </span>
+                <span class="sample-chip" onclick="fillIPSample('142.250.190.46', '192.168.1.10', 56, 'TCP')">
+                  <i class="fas fa-arrow-down me-1"></i>Legitimate Traffic
+                </span>
+              </div>
+            </div>
+
+            <button class="btn btn-cyber w-100" id="btnAnalyzeManual" onclick="analyzeIPManual()">
+              <i class="fas fa-search me-2"></i>Inspect Packet
+            </button>
+          </div>
+
+          <!-- PCAP Tab -->
+          <div class="tab-pane fade" id="pcapTab">
+            <div class="upload-zone" id="pcapZone" onclick="document.getElementById('pcapFile').click()">
+              <i class="fas fa-file-code"></i>
+              <p id="pcapName">Drop PCAP file here or click to browse</p>
+              <div class="upload-hint">Supported: .pcap, .pcapng, .cap (Max 16MB)</div>
+              <input type="file" id="pcapFile" accept=".pcap,.pcapng,.cap" onchange="previewPcapFile(this)">
+            </div>
+            <button class="btn btn-cyber w-100 mt-3" id="pcapBtn" onclick="analyzeIPPcap()">
+              <i class="fas fa-microchip me-2"></i>Analyze PCAP Flow
+            </button>
+          </div>
+        </div>
+
+        <div id="ipLoading" class="text-center mt-3 d-none">
+          <div class="cyber-spinner mx-auto mb-2"></div>
+          <small class="text-secondary">Correlating packet headers against RFC standards...</small>
+        </div>
+
+        <!-- Attack Explainer -->
+        <div id="beginnerExplainer" class="attack-explainer-card">
+          <div class="explainer-title"><i class="fas fa-lightbulb"></i> What is IP Address Spoofing?</div>
+          <p class="text-secondary small mb-2">
+            IP spoofing occurs when an attacker modifies the source address in the IP packet header to impersonate another trusted system or conceal their true network origin.
+          </p>
+          <div class="attack-step-diagram">
+            <div class="attack-node threat">Attacker<br><small class="text-muted">Forged Src IP</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node text-warning">Router / Firewall<br><small class="text-muted">Unvalidated</small></div>
+            <div class="attack-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="attack-node victim">Target Server<br><small class="text-muted">Deceived Host</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Library -->
+    <div class="cyber-card mt-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-terminal me-2 text-accent"></i>SOC Analyst Command Library</span>
+        <span class="badge bg-secondary">CLI Verification</span>
+      </div>
+      <div class="cyber-card-body">
+        <p class="text-muted small mb-3">Diagnostic commands for testing anti-spoofing reverse path filtering and detecting forged frames.</p>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-network-wired text-accent"></i> Sniff Ingress Private RFC Traversal</span>
+            <span class="command-tag">tcpdump</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="ipcmd1">tcpdump -i eth0 -nn 'src 10.0.0.0/8 or src 172.16.0.0/12 or src 192.168.0.0/16'</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('ipcmd1').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="command-card">
+          <div class="command-header">
+            <span class="command-title"><i class="fas fa-shield-alt text-accent"></i> Verify Linux uRPF Strict Mode</span>
+            <span class="command-tag">sysctl</span>
+          </div>
+          <div class="command-body">
+            <code class="command-code" id="ipcmd2">sysctl -a | grep -i '\.rp_filter = 1'</code>
+            <button class="copy-cmd-btn" onclick="copyToClipboard(document.getElementById('ipcmd2').textContent, this)">
+              <i class="fas fa-copy me-1"></i>Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div class="col-lg-7" id="ipResultCol">
+    <div class="cyber-card text-center py-5">
+      <i class="fas fa-network-wired fa-3x mb-3 text-muted"></i>
+      <h5 class="text-muted">Enter packet telemetry or upload a PCAP capture</h5>
+      <p class="text-secondary small">Deep RFC compliance, hop-count anomalies, and spoofing flags will appear here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentMode = 'beginner';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('btnModeBeginner').classList.toggle('active', mode === 'beginner');
+  document.getElementById('btnModeAdvanced').classList.toggle('active', mode === 'advanced');
+  document.getElementById('currentModeLabel').textContent = mode === 'beginner' 
+    ? 'Beginner Mode (Guided & Explainable)' 
+    : 'Advanced Mode (Raw Telemetry & Packet Flags)';
+  
+  const beginnerExplainer = document.getElementById('beginnerExplainer');
+  if (beginnerExplainer) beginnerExplainer.style.display = mode === 'beginner' ? 'block' : 'none';
+}
+
+function fillIPSample(src, dst, ttl, proto) {
+  document.getElementById('srcIp').value = src;
+  document.getElementById('dstIp').value = dst;
+  document.getElementById('ttlVal').value = ttl;
+  document.getElementById('protoVal').value = proto;
+  showAlert('Packet sample loaded. Click "Inspect Packet" to analyze.', 'info');
+}
+
+function previewPcapFile(inp) {
+  if (inp.files[0]) {
+    document.getElementById('pcapName').textContent = inp.files[0].name;
+    document.getElementById('pcapZone').style.borderColor = 'var(--accent)';
+  }
+}
+
+async function analyzeIPPcap() {
+  const file = document.getElementById('pcapFile').files[0];
+  if (!file) {
+    showAlert('Please select a PCAP file first.', 'warning');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', file);
+  await executeAnalysis('/ip-spoofing/api/analyze', fd);
+}
+
+async function analyzeIPManual() {
+  const src = document.getElementById('srcIp').value.trim();
+  const dst = document.getElementById('dstIp').value.trim();
+  const ttl = parseInt(document.getElementById('ttlVal').value) || 64;
+  const proto = document.getElementById('protoVal').value;
+
+  if (!src) {
+    showAlert('Source IP address is required.', 'warning');
+    return;
+  }
+
+  const payload = { src_ip: src, dst_ip: dst, ttl: ttl, protocol: proto };
+  await executeAnalysis('/ip-spoofing/api/analyze', JSON.stringify(payload));
+}
+
+async function executeAnalysis(url, body) {
+  document.getElementById('ipLoading').classList.remove('d-none');
+  try {
+    const data = await cyberShieldFetch(url, { method: 'POST', body });
+    if (!data.success) {
+      showAlert(data.error || 'Analysis failed.', 'danger');
+      return;
+    }
+    renderIPResult(data);
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'danger');
+  } finally {
+    document.getElementById('ipLoading').classList.add('d-none');
+  }
+}
+
+function renderIPResult(d) {
+  const col = document.getElementById('ipResultCol');
+  const colors = {
+    'Very Low': '#34c759',
+    'Low': '#00d9ff',
+    'Medium': '#ffd60a',
+    'High': '#ff9500',
+    'Critical': '#ff3366'
+  };
+  const c = colors[d.risk_level] || '#00d9ff';
+  const inds = (d.indicators || []).map(i =>
+    `<div class="indicator-item ${d.risk_score < 30 ? 'indicator-safe' : ''}">
+       <i class="fas fa-${d.risk_score < 30 ? 'check-circle' : 'exclamation-circle'}"></i>
+       <span>${i}</span>
+     </div>`
+  ).join('') || '<div class="text-muted small">No spoofing indicators detected.</div>';
+
+  const det = d.details || {};
+
+  col.innerHTML = `
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-chart-pie me-2"></i>Analysis Verdict</span>
+        <span class="badge bg-secondary">${new Date(d.timestamp).toLocaleString()}</span>
+      </div>
+      <div class="cyber-card-body">
+        <div class="d-flex align-items-center gap-4 mb-3">
+          <div class="risk-score-circle" style="--score-color:${c};border-color:${c}">
+            <div class="score-num" style="color:${c}">${d.risk_score}</div>
+            <div class="score-label">/ 100 RISK</div>
+          </div>
+          <div>
+            <h3 class="fw-bold mb-1" style="color:${c}">${d.result}</h3>
+            <span class="badge badge-${(d.risk_level||'low').toLowerCase().replace(' ','-')} me-2">${d.risk_level} Risk</span>
+            <div class="text-secondary small mt-1"><i class="fas fa-microchip me-1 text-accent"></i>${d.model_used || 'Heuristic & RFC Engine'}</div>
+          </div>
+        </div>
+
+        ${det.total_packets !== undefined ? `
+        <div class="row g-2 mt-3">
+          <div class="col-4 text-center p-2 rounded" style="background:#0d0d0d;border:1px solid #292929">
+            <div class="text-muted small">Total Packets</div>
+            <div class="fw-bold text-accent fs-5">${det.total_packets||0}</div>
+          </div>
+          <div class="col-4 text-center p-2 rounded" style="background:#0d0d0d;border:1px solid #292929">
+            <div class="text-muted small">Suspicious IPs</div>
+            <div class="fw-bold text-warning fs-5">${(det.suspicious_ips||[]).length}</div>
+          </div>
+          <div class="col-4 text-center p-2 rounded" style="background:#0d0d0d;border:1px solid #292929">
+            <div class="text-muted small">Unique Sources</div>
+            <div class="fw-bold text-accent fs-5">${det.unique_sources||0}</div>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="cyber-card mb-4">
+      <div class="cyber-card-header">
+        <span><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Detection Indicators</span>
+      </div>
+      <div class="cyber-card-body">${inds}</div>
+    </div>
+
+    ${d.detection_id ? `
+    <div class="d-flex gap-2">
+      <a href="/reports/${d.detection_id}/pdf" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-pdf me-1"></i>Download PDF</a>
+      <a href="/reports/${d.detection_id}/csv" class="btn btn-cyber-outline" target="_blank"><i class="fas fa-file-csv me-1"></i>Download CSV</a>
+    </div>` : ''}`;
+}
+</script>
+{% endblock %}

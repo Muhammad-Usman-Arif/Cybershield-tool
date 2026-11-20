@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+  <div class="auth-left d-none d-lg-flex">
+    <div class="cyber-grid-bg"></div>
+    <div class="auth-brand">
+      <div class="auth-logo-icon"><i class="fas fa-shield-halved fa-3x"></i></div>
+      <h1 class="auth-brand-name">CyberShield AI</h1>
+      <p class="auth-brand-tagline">Join the Security Operations Center</p>
+    </div>
+    <div class="scanline-effect"></div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form-card">
+      <h2 class="auth-form-title">Create Account</h2>
+      <p class="auth-form-subtitle text-muted">Register as a security analyst</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} py-2">{{ msg }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.username.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-user"></i></span>
+            {{ form.username(class="form-control auth-input", placeholder="Choose a username") }}
+          </div>
+          {% for err in form.username.errors %}
+            <div class="form-text text-danger">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.email.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-envelope"></i></span>
+            {{ form.email(class="form-control auth-input", placeholder="Enter email") }}
+          </div>
+          {% for err in form.email.errors %}
+            <div class="form-text text-danger">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">{{ form.password.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-lock"></i></span>
+            {{ form.password(class="form-control auth-input", placeholder="Min 8 characters", id="regPass") }}
+            <button class="btn auth-input-icon border border-secondary" type="button"
+                    onclick="togglePass('regPass', this)"><i class="fas fa-eye"></i></button>
+          </div>
+          {% for err in form.password.errors %}
+            <div class="form-text text-danger">{{ err }}</div>{% endfor %}
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">{{ form.confirm.label.text }}</label>
+          <div class="input-group">
+            <span class="input-group-text auth-input-icon"><i class="fas fa-lock"></i></span>
+            {{ form.confirm(class="form-control auth-input", placeholder="Repeat password", id="regPass2") }}
+          </div>
+          {% for err in form.confirm.errors %}
+            <div class="form-text text-danger">{{ err }}</div>{% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-cyber w-100 mb-3">
+          <i class="fas fa-user-plus me-2"></i>{{ form.submit.label.text }}
+        </button>
+        <p class="text-center text-muted mb-0">
+          Already have an account? <a href="{{ url_for('auth.login') }}" class="text-cyan">Sign in</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+function togglePass(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.querySelector('i').className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+</script>
+{% endblock %}
