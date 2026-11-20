@@ -19,25 +19,26 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'cybershield-insecure-dev-secret-key-change-in-production')
 
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_URL',
-        f"sqlite:///{os.path.join(basedir, 'cybershield.db')}"
-    )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    if os.getenv('VERCEL'):
+        SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:////tmp/cybershield.db')
+        UPLOAD_FOLDER = '/tmp/uploads'
+        REPORTS_FOLDER = '/tmp/reports'
+    else:
+        SQLALCHEMY_DATABASE_URI = os.getenv(
+            'DATABASE_URL',
+            f"sqlite:///{os.path.join(basedir, 'cybershield.db')}"
+        )
+        UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER')
+        if not UPLOAD_FOLDER:
+            UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+        elif not os.path.isabs(UPLOAD_FOLDER):
+            UPLOAD_FOLDER = os.path.join(basedir, UPLOAD_FOLDER)
 
-    # Uploads Storage & Size Limits
-    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER')
-    if not UPLOAD_FOLDER:
-        UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
-    elif not os.path.isabs(UPLOAD_FOLDER):
-        UPLOAD_FOLDER = os.path.join(basedir, UPLOAD_FOLDER)
-
-    # Reports folder (for exported PDFs/CSVs)
-    REPORTS_FOLDER = os.getenv('REPORTS_FOLDER')
-    if not REPORTS_FOLDER:
-        REPORTS_FOLDER = os.path.join(basedir, 'reports')
-    elif not os.path.isabs(REPORTS_FOLDER):
-        REPORTS_FOLDER = os.path.join(basedir, REPORTS_FOLDER)
+        REPORTS_FOLDER = os.getenv('REPORTS_FOLDER')
+        if not REPORTS_FOLDER:
+            REPORTS_FOLDER = os.path.join(basedir, 'reports')
+        elif not os.path.isabs(REPORTS_FOLDER):
+            REPORTS_FOLDER = os.path.join(basedir, REPORTS_FOLDER)
 
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
 
